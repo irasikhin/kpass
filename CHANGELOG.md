@@ -18,7 +18,7 @@ until 1.0.
 
 ### Features at launch
 
-- Entry-first CLI: `ls`, `search`, `get`, `copy`, `pick`, `insert`, `edit`,
+- Core CLI: `ls`, `search`, `get`, `copy`, `pick`, `insert`, `edit`,
   `remove`, `move`, `duplicate`, `mkdir`, `generate`.
 - Multi-database profiles via `~/.config/kpass/config.toml`; chained
   password unlocking (one DB can hold another's master password).

@@ -4,8 +4,8 @@
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Entry-first CLI for [KeePass](https://keepass.info/) databases —
-another CLI for KeePass, built vibe-coding style: human designs, AI drives.
+Another CLI for [KeePass](https://keepass.info/), built vibe-coding style:
+human designs, AI drives.
 
 > ⚠️ **Alpha — pre-stable software.** CLI flags, config schema, on-disk
 > layout and the Go module API can change without notice until 1.0. Always

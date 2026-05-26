@@ -250,7 +250,7 @@ func newKongApp(cli *kpassCLI, c *ctx) (*kong.Kong, error) {
 	return kong.New(
 		cli,
 		kong.Name("kpass"),
-		kong.Description("Entry-first CLI for KeePass database profiles."),
+		kong.Description("Another CLI for KeePass."),
 		kong.UsageOnError(),
 		kong.Writers(c.out, c.errw),
 		kong.Bind(c),

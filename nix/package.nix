@@ -40,7 +40,7 @@ buildGoModule {
   '';
 
   meta = {
-    description = "Entry-first CLI for KeePass database profiles";
+    description = "Another CLI for KeePass";
     homepage = "https://github.com/irasikhin/kpass";
     license = lib.licenses.mit;
     mainProgram = "kpass";

@@ -1,5 +1,5 @@
 {
-  description = "kpass — entry-first CLI for KeePass database profiles";
+  description = "kpass — another CLI for KeePass";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
