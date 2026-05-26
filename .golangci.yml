@@ -1,0 +1,50 @@
+# golangci-lint configuration for kpass.
+# Run: golangci-lint run ./...
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - errcheck      # check unhandled errors
+    - gosimple      # simplify code
+    - govet         # go vet
+    - ineffassign   # detect ineffectual assignments
+    - staticcheck   # advanced static analysis
+    - unused        # unused variables/imports
+    - misspell      # common spelling mistakes
+    - gofmt         # formatting
+    - goimports     # import ordering
+    - revive        # extensible linter (replaces golint)
+    - copyloopvar   # copy loop variable
+    - nilerr        # detect nil error returns
+    - unconvert     # unnecessary conversions
+    - unparam       # unused function parameters
+    - wastedassign  # wasted assignments
+
+linters-settings:
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: error-naming
+      - name: error-return
+      - name: error-strings
+      - name: exported
+        disabled: true  # too noisy for a CLI tool
+      - name: if-return
+      - name: increment-decrement
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: unnecessary-stmt
+      - name: unreachable-code
+  goimports:
+    local-prefixes: github.com/irasikhin/kpass
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

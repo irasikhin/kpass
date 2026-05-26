@@ -1,0 +1,11 @@
+*.kdbx
+
+# Go
+/kpass
+/cmd/kpass/kpass
+/result
+
+# Cache & tools
+/.direnv
+/.pre-commit-cache
+/.golangci-lint-cache
