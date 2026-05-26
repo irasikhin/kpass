@@ -11,7 +11,7 @@ human designs, AI drives.
 > layout and the Go module API can change without notice until 1.0. Always
 > back up your `.kdbx` file before destructive operations. Use at your own risk.
 
-> Vibe-coded by Claude Opus 3.7, DeepSeek V4 Pro, and GPT-4o.
+> Vibe-coded by Claude Opus 3.7, DeepSeek V4 Pro, and GPT 5.5.
 
 ## Quick start
 
