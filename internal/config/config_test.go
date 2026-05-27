@@ -942,3 +942,57 @@ func TestReadPasswordFile_Directory(t *testing.T) {
 		t.Error("expected error for directory")
 	}
 }
+
+func TestReadPasswordFile_ReadError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses 0000 file mode")
+	}
+	dir := t.TempDir()
+	pw := filepath.Join(dir, "pw")
+	if err := os.WriteFile(pw, []byte("secret\n"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadPasswordFile(pw); err == nil {
+		t.Error("expected ReadFile error for 0000-mode file")
+	}
+}
+
+func TestLoad_StatPermissionError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses dir mode 0o000")
+	}
+	dir := t.TempDir()
+	hidden := filepath.Join(dir, "hidden")
+	if err := os.MkdirAll(hidden, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	inside := filepath.Join(hidden, "config.toml")
+	if err := os.WriteFile(inside, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Strip exec from parent dir → Stat of inner path fails with EACCES (not IsNotExist).
+	if err := os.Chmod(hidden, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(hidden, 0o700) })
+
+	_, _, err := Load(inside)
+	if err == nil || !strings.Contains(err.Error(), "not accessible") {
+		t.Errorf("expected stat permission error, got %v", err)
+	}
+}
+
+func TestLoad_ReadFileError(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root can read 0000 files")
+	}
+	dir := t.TempDir()
+	cfg := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(cfg, []byte("x"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err := Load(cfg)
+	if err == nil || !strings.Contains(err.Error(), "failed to read") {
+		t.Errorf("expected read-error, got %v", err)
+	}
+}

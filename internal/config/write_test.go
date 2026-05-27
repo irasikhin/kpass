@@ -17,6 +17,24 @@ func TestWriteAtomic_MissingDefault(t *testing.T) {
 	}
 }
 
+func TestWriteAtomic_MkdirError(t *testing.T) {
+	// Make a regular file at the path that would be MkdirAll's parent target →
+	// MkdirAll fails because a non-directory exists where a directory is needed.
+	dir := t.TempDir()
+	conflict := filepath.Join(dir, "conflict")
+	if err := os.WriteFile(conflict, nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(conflict, "config.toml") // parent "conflict" is a file, not dir
+	err := WriteAtomic(target, FileConfig{
+		DefaultDatabase: "main",
+		Databases:       map[string]Profile{"main": {Database: "/x.kdbx"}},
+	})
+	if err == nil {
+		t.Error("expected MkdirAll error when parent is a regular file")
+	}
+}
+
 func TestWriteAtomic_MissingDatabases(t *testing.T) {
 	dir := t.TempDir()
 	err := WriteAtomic(filepath.Join(dir, "config.toml"), FileConfig{
