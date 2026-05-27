@@ -12,7 +12,7 @@ human designs, AI drives.
 > module API may change between minor versions until 1.0. Always back up
 > your `.kdbx` file before destructive operations.
 
-> Vibe-coded by Claude Opus 3.7, DeepSeek V4 Pro, and GPT 5.5.
+> Vibe-coded by Claude Opus, DeepSeek, and GPT.
 
 ## Install
 
