@@ -31,12 +31,12 @@ type Spec struct {
 func Parse(uri string) (Spec, error) {
 	u, err := url.Parse(uri)
 	if err != nil || u.Scheme != "otpauth" {
-		return Spec{}, fmt.Errorf("oTP value is not an otpauth URI")
+		return Spec{}, fmt.Errorf("OTP value is not an otpauth URI")
 	}
 	q := u.Query()
 	secret := q.Get("secret")
 	if secret == "" {
-		return Spec{}, fmt.Errorf("oTP URI does not contain a secret")
+		return Spec{}, fmt.Errorf("OTP URI does not contain a secret")
 	}
 	digits := 6
 	if v := q.Get("digits"); v != "" {

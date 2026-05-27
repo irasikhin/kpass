@@ -290,7 +290,7 @@ func parseCSVImport(data []byte) ([]importEntry, error) {
 		return nil, fmt.Errorf("invalid CSV: %v", err)
 	}
 	if len(records) < 2 {
-		return nil, fmt.Errorf("cSV must have a header row plus data")
+		return nil, fmt.Errorf("CSV must have a header row plus data")
 	}
 	header := records[0]
 	colIndex := map[string]int{}
@@ -299,7 +299,7 @@ func parseCSVImport(data []byte) ([]importEntry, error) {
 	}
 	pathIdx, ok := colIndex["path"]
 	if !ok {
-		return nil, fmt.Errorf("cSV must have a 'path' column")
+		return nil, fmt.Errorf("CSV must have a 'path' column")
 	}
 	get := func(row []string, name string) string {
 		if idx, ok := colIndex[name]; ok && idx < len(row) {
