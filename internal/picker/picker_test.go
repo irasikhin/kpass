@@ -182,6 +182,20 @@ func TestPick_ExitOther_Status(t *testing.T) {
 	}
 }
 
+func TestPick_DefaultRunFnBody(t *testing.T) {
+	resetPicker(t)
+	lookPathFn = func(string) (string, error) { return "/no/such/fzf/binary", nil }
+	// runCmdFn NOT overridden → default c.Run() lambda executes (fails because binary is absent).
+	_, err := Pick([]string{"a", "b"}, "", PickOpts{})
+	if err == nil {
+		t.Error("expected error from missing binary")
+	}
+	_ = io.Discard
+	_ = errors.New
+	_ = exec.ErrNotFound
+	_ = strings.TrimSpace
+}
+
 func TestPick_EmptySelection(t *testing.T) {
 	resetPicker(t)
 	Hook = nil
