@@ -153,6 +153,46 @@ func TestGenerate_InvalidSecret(t *testing.T) {
 	}
 }
 
+func TestParse_InvalidPeriod(t *testing.T) {
+	_, err := Parse("otpauth://totp/foo?secret=AAA&period=zz")
+	if err == nil {
+		t.Error("expected error for invalid period")
+	}
+}
+
+func TestGenerate_ParseError(t *testing.T) {
+	if _, err := Generate("not-a-uri", time.Now()); err == nil {
+		t.Error("expected Parse error to propagate from Generate")
+	}
+}
+
+func TestGenerate_SHA512(t *testing.T) {
+	// 64-byte secret for SHA512 (base32).
+	uri := "otpauth://totp/t?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQGEZDGNA&digits=8&algorithm=SHA512"
+	code, err := Generate(uri, time.Unix(59, 0).UTC())
+	if err != nil {
+		t.Fatalf("SHA512 Generate error: %v", err)
+	}
+	if len(code) != 8 {
+		t.Errorf("SHA512 code length = %d", len(code))
+	}
+}
+
+func TestGenerate_WallTimeFallback(t *testing.T) {
+	// Exercise the time.Now() branch by clearing NowHook and passing zero time.
+	old := NowHook
+	NowHook = nil
+	defer func() { NowHook = old }()
+	uri := "otpauth://totp/t?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&digits=6&algorithm=SHA1"
+	code, err := Generate(uri, time.Time{})
+	if err != nil {
+		t.Fatalf("Generate wall-time fallback: %v", err)
+	}
+	if len(code) != 6 {
+		t.Errorf("code length = %d", len(code))
+	}
+}
+
 func TestGenerate_SixDigits(t *testing.T) {
 	uri := "otpauth://totp/test?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&digits=6&algorithm=SHA1"
 	old := NowHook
