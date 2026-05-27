@@ -6,6 +6,7 @@ import (
 
 	"github.com/tobischo/gokeepasslib/v3"
 
+	"github.com/irasikhin/kpass/internal/config"
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
 
@@ -214,8 +215,7 @@ func OpenSimple(dbPath, passwordFile, keyFile, inlinePassword string) (*DB, erro
 	expanded := runtimex.ExpandPath(dbPath)
 	password := inlinePassword
 	if password == "" && passwordFile != "" {
-		// inlined here to avoid importing config (cycle).
-		data, err := readPasswordFile(passwordFile)
+		data, err := config.ReadPasswordFile(passwordFile)
 		if err != nil {
 			return nil, err
 		}
