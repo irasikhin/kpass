@@ -58,7 +58,7 @@ jobs:
           cp README.md CHANGELOG.md LICENSE "dist/${out}/" 2>/dev/null || true
           tar -czf "dist/${out}.tar.gz" -C dist "${out}"
           (cd dist && sha256sum "${out}.tar.gz" > "${out}.tar.gz.sha256")
-          if [ "$GOOS" = "linux" ]; then
+          if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "amd64" ]; then
             "dist/${out}/kpass" --version
             "dist/${out}/kpass" --help >/dev/null
           fi
