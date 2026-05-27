@@ -23,8 +23,8 @@ until 1.0.
 - Multi-database profiles via `~/.config/kpass/config.toml`; chained
   password unlocking (one DB can hold another's master password).
 - Per-database master-password cache with TTL.
-- Pure-Go clipboard (X11 via dlopen, Wayland via `wl-clipboard` fallback)
-  and interactive picker — no `fzf`/`xclip` runtime dependency.
+- Clipboard and interactive picker integration via common platform tools
+  (`xclip`/`xsel`, `wl-clipboard`, macOS clipboard support, `fzf`).
 - Attachments (`attach`), OTP (RFC 6238) export/copy, custom fields, tags.
 - Cross-database tooling: `merge`, `import`/`export` (JSON/CSV/pass(1)),
   `combine` (merge two entries within one DB).

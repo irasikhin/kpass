@@ -56,6 +56,7 @@ database = "~/keepass/work.kdbx"
 
 - `kpass --help` — full command list and global flags
 - `kpass <cmd> --help` — per-command options and examples
+- [SECURITY.md](./SECURITY.md) — vulnerability reporting and secret-handling notes
 - [CHANGELOG.md](./CHANGELOG.md) — what's in this release
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — development setup, conventions, releases
 
