@@ -10,6 +10,29 @@ commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## [Unreleased]
 
+## [0.2.1] — 2026-05-27
+
+### Fixed
+
+- restore mid-sentence CSV/OTP acronyms in error strings (784e739)
+- init --force overwrites existing database (c13f377)
+- drop open --field otp; harden Windows opener (077c3f0)
+- address six "important" findings from the v0.2.0 audit (a15bea6)
+
+### Refactored
+
+- %w error wraps, drop dead Render/ClearAll, warn on backup fail (788b9c6)
+
+### Docs
+
+- drop "alpha" language and rewrite v0.2.0 changelog section (132e424)
+- README copy flag is -F (not -f), and release.sh header is honest (76e746b)
+
+### Chores
+
+- ignore /.claude/ tooling state (72c0fa7)
+
+
 ## [0.2.0] — 2026-05-27
 
 First stable release. Promotes the `0.1.0-alpha` series; users coming
@@ -145,3 +168,4 @@ until 1.0.
 [0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
+[0.2.1]: https://github.com/irasikhin/kpass/compare/v0.2.0...v0.2.1
