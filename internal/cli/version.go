@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -46,10 +45,6 @@ func versionString() string {
 		rev = rev[:12]
 	}
 	return fmt.Sprintf("dev (%s%s)", rev, modified)
-}
-
-func printVersion(w io.Writer) {
-	fmt.Fprintf(w, "kpass %s %s/%s\n", versionString(), runtime.GOOS, runtime.GOARCH)
 }
 
 // versionLine is what kong.VersionFlag prints. Includes the GOOS/GOARCH so

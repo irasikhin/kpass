@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -264,5 +263,3 @@ func openSeededDB(t *testing.T, path, password string) *gokeepasslib.Database {
 	}
 	return db
 }
-
-func _unused(_ io.Reader) {}

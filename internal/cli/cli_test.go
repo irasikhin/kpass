@@ -36,24 +36,6 @@ type multiDBConfigOpts struct {
 	skipWorkPasswordFile bool
 }
 
-func writePasswordLookupConfig(t *testing.T, f *fixture) string {
-	t.Helper()
-	cfg := filepath.Join(f.root, "kpass-password-lookup.toml")
-	writeFile(t, cfg, strings.Join([]string{
-		`default = "main"`,
-		"",
-		"[databases.main]",
-		`database = "` + f.dbPath + `"`,
-		"",
-		"[databases.work]",
-		`database = "` + f.workDBPath + `"`,
-		`password_database = "main"`,
-		`password_entry = "db-passwords/work"`,
-		"",
-	}, "\n"))
-	return cfg
-}
-
 func writePasswordLookupCycleConfig(t *testing.T, f *fixture) string {
 	t.Helper()
 	cfg := filepath.Join(f.root, "kpass-password-cycle.toml")
