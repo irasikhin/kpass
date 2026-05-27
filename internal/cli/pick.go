@@ -80,12 +80,9 @@ func (cmd *PickCmd) Run(c *ctx) error {
 			if err != nil {
 				return &UserError{Msg: err.Error()}
 			}
-			if isOtpField(cmd.Field) {
-				code, err := otpCode(v)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				v = code
+			v, err = resolveFieldValue(cmd.Field, v)
+			if err != nil {
+				return &UserError{Msg: err.Error()}
 			}
 			fmt.Fprintln(c.out, v)
 		} else {
@@ -100,12 +97,9 @@ func (cmd *PickCmd) Run(c *ctx) error {
 		if err != nil {
 			return &UserError{Msg: err.Error()}
 		}
-		if isOtpField(f) {
-			code, err := otpCode(v)
-			if err != nil {
-				return &UserError{Msg: err.Error()}
-			}
-			v = code
+		v, err = resolveFieldValue(f, v)
+		if err != nil {
+			return &UserError{Msg: err.Error()}
 		}
 		if err := clipboardWrite(v, timeout); err != nil {
 			return &UserError{Msg: err.Error()}
@@ -172,6 +166,3 @@ func (cmd *PickCmd) Run(c *ctx) error {
 	return nil
 }
 
-func isOtpField(field string) bool {
-	return field == "otp" || field == "totp" || field == "code"
-}

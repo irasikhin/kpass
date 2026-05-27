@@ -76,12 +76,9 @@ func (cmd *GetCmd) Run(c *ctx) error {
 				if err != nil {
 					return &UserError{Msg: err.Error()}
 				}
-				if isOtpField(f) {
-					code, err := otpCode(v)
-					if err != nil {
-						return &UserError{Msg: err.Error()}
-					}
-					v = code
+				v, err = resolveFieldValue(f, v)
+				if err != nil {
+					return &UserError{Msg: err.Error()}
 				}
 				if (f == "password" || f == "pass") && cmd.Mask {
 					v = maskPassword(v)
@@ -113,12 +110,9 @@ func (cmd *GetCmd) runJSON(c *ctx, entries []*db.Entry, fields []string) error {
 			if err != nil {
 				return &UserError{Msg: err.Error()}
 			}
-			if isOtpField(fields[0]) {
-				code, err := otpCode(v)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				v = code
+			v, err = resolveFieldValue(fields[0], v)
+			if err != nil {
+				return &UserError{Msg: err.Error()}
 			}
 			data, err := json.Marshal(v)
 			if err != nil {
@@ -133,12 +127,9 @@ func (cmd *GetCmd) runJSON(c *ctx, entries []*db.Entry, fields []string) error {
 			if err != nil {
 				return &UserError{Msg: err.Error()}
 			}
-			if isOtpField(f) {
-				code, err := otpCode(v)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				v = code
+			v, err = resolveFieldValue(f, v)
+			if err != nil {
+				return &UserError{Msg: err.Error()}
 			}
 			obj[f] = v
 		}
@@ -171,12 +162,9 @@ func (cmd *GetCmd) runJSON(c *ctx, entries []*db.Entry, fields []string) error {
 			if err != nil {
 				return &UserError{Msg: err.Error()}
 			}
-			if isOtpField(fields[0]) {
-				code, err := otpCode(v)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				v = code
+			v, err = resolveFieldValue(fields[0], v)
+			if err != nil {
+				return &UserError{Msg: err.Error()}
 			}
 			obj[e.DisplayPath()] = v
 		}
@@ -197,12 +185,9 @@ func (cmd *GetCmd) runJSON(c *ctx, entries []*db.Entry, fields []string) error {
 			if err != nil {
 				return &UserError{Msg: err.Error()}
 			}
-			if isOtpField(f) {
-				code, err := otpCode(v)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				v = code
+			v, err = resolveFieldValue(f, v)
+			if err != nil {
+				return &UserError{Msg: err.Error()}
 			}
 			obj[f] = v
 		}

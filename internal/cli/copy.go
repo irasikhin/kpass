@@ -33,12 +33,9 @@ func (cmd *CopyCmd) Run(c *ctx) error {
 	if err != nil {
 		return &UserError{Msg: err.Error()}
 	}
-	if isOtpField(cmd.Field) {
-		code, err := otpCode(value)
-		if err != nil {
-			return &UserError{Msg: err.Error()}
-		}
-		value = code
+	value, err = resolveFieldValue(cmd.Field, value)
+	if err != nil {
+		return &UserError{Msg: err.Error()}
 	}
 
 	if err := clipboardWrite(value, timeout); err != nil {
