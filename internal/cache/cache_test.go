@@ -130,10 +130,18 @@ func TestClearAll(t *testing.T) {
 
 	db1 := filepath.Join(dir, "a.kdbx")
 	db2 := filepath.Join(dir, "b.kdbx")
-	os.WriteFile(db1, []byte("a"), 0o600)
-	os.WriteFile(db2, []byte("b"), 0o600)
-	Store(db1, "", "pw1", 300)
-	Store(db2, "", "pw2", 300)
+	if err := os.WriteFile(db1, []byte("a"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(db2, []byte("b"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Store(db1, "", "pw1", 300); err != nil {
+		t.Fatal(err)
+	}
+	if err := Store(db2, "", "pw2", 300); err != nil {
+		t.Fatal(err)
+	}
 
 	n, err := ClearAll()
 	if err != nil {

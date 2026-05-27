@@ -26,7 +26,7 @@ func Edit(initial string, explicit string) (string, error) {
 		return "", err
 	}
 	tmpPath := tmp.Name()
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 	if err := os.Chmod(tmpPath, 0o600); err != nil {
 		_ = tmp.Close()
 		return "", err
