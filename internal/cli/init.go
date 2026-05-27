@@ -26,9 +26,12 @@ func (cmd *InitCmd) Run(c *ctx) error {
 		return &UserError{Msg: "Database path cannot be empty."}
 	}
 
-	if !cmd.Force {
-		if _, err := os.Stat(dbPath); err == nil {
+	if _, err := os.Stat(dbPath); err == nil {
+		if !cmd.Force {
 			return &UserError{Msg: fmt.Sprintf("Database already exists: %s (use --force to overwrite)", dbPath)}
+		}
+		if err := os.Remove(dbPath); err != nil {
+			return &UserError{Msg: fmt.Sprintf("Cannot remove existing database: %v", err)}
 		}
 	}
 
