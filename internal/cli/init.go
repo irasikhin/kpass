@@ -103,6 +103,12 @@ func ensureConfig(dbPath, keyFile string) (string, error) {
 	if existing, _, err := config.Load(cfgPath); err == nil {
 		fc = existing
 	}
+	if fc.Databases == nil {
+		fc.Databases = map[string]config.Profile{}
+	}
+	if fc.DefaultDatabase == "" {
+		fc.DefaultDatabase = "default"
+	}
 
 	// If "default" profile does not exist, add it.
 	if _, ok := fc.Databases["default"]; !ok {
