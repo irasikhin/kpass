@@ -66,24 +66,28 @@ func absResolve(p string) string {
 
 // Load returns the cached password if present, valid, and unexpired.
 // On any error or expiry, removes the cache file and returns "".
+//
+// A missing, unreadable, or corrupt cache file is reported as ("", nil) —
+// the caller treats it as a cache miss and re-prompts. We only surface
+// errors when even computing the cache path failed.
 func Load(database, keyFile string) (string, error) {
 	p, err := Path(database, keyFile)
 	if err != nil || p == "" {
 		return "", err
 	}
-	info, err := os.Stat(p)
-	if err != nil || info.IsDir() {
-		return "", nil
+	info, statErr := os.Stat(p)
+	if statErr != nil || info.IsDir() {
+		return "", nil //nolint:nilerr // no cache file = miss
 	}
 	data, err := os.ReadFile(p)
 	if err != nil {
 		_ = os.Remove(p)
-		return "", nil
+		return "", nil //nolint:nilerr // corrupt cache → miss, not caller error
 	}
 	var e entry
 	if err := json.Unmarshal(data, &e); err != nil {
 		_ = os.Remove(p)
-		return "", nil
+		return "", nil //nolint:nilerr // corrupt cache → miss, not caller error
 	}
 	if e.Password == "" || e.ExpiresAt <= time.Now().Unix() {
 		_ = os.Remove(p)
@@ -116,7 +120,7 @@ func Clear(database, keyFile string) (bool, error) {
 		return false, err
 	}
 	if _, err := os.Stat(p); err != nil {
-		return false, nil
+		return false, nil //nolint:nilerr // no cache file = nothing to clear
 	}
 	if err := os.Remove(p); err != nil {
 		return false, err
@@ -133,7 +137,7 @@ func ClearAll() (int, error) {
 	dir := filepath.Join(runtimeDir, "kpass")
 	matches, err := filepath.Glob(filepath.Join(dir, "*.json"))
 	if err != nil || len(matches) == 0 {
-		return 0, nil
+		return 0, nil //nolint:nilerr // glob failure → nothing to clear
 	}
 	removed := 0
 	for _, m := range matches {

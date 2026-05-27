@@ -53,7 +53,7 @@ func (cmd *CompleteCmd) Run(c *ctx) error {
 	case "entries":
 		if err := c.openDatabase(); err != nil {
 			// Silently return — can't prompt for password during completion.
-			return nil
+			return nil //nolint:nilerr // completion must not propagate prompts
 		}
 		for _, e := range c.db.SortedEntries() {
 			p := e.DisplayPath()
@@ -63,7 +63,7 @@ func (cmd *CompleteCmd) Run(c *ctx) error {
 		}
 	case "tags":
 		if err := c.openDatabase(); err != nil {
-			return nil
+			return nil //nolint:nilerr // completion must not propagate prompts
 		}
 		for _, t := range sortedUniqueTags(c.db) {
 			if cmd.Cur == "" || strings.HasPrefix(strings.ToLower(t), strings.ToLower(cmd.Cur)) {
@@ -72,14 +72,14 @@ func (cmd *CompleteCmd) Run(c *ctx) error {
 		}
 	case "attachments":
 		if err := c.openDatabase(); err != nil {
-			return nil
+			return nil //nolint:nilerr // completion must not propagate prompts
 		}
 		if cmd.Entry == "" {
 			return nil
 		}
 		entry, err := c.db.ResolveEntry(cmd.Entry)
 		if err != nil {
-			return nil
+			return nil //nolint:nilerr // unresolved entry → no completions
 		}
 		for _, name := range entry.AttachmentList() {
 			if cmd.Cur == "" || strings.HasPrefix(name, cmd.Cur) {
