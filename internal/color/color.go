@@ -14,17 +14,22 @@ import (
 // set to false when NO_COLOR is present or stdout is not a terminal.
 var Enabled bool
 
-var once sync.Once
+var (
+	once       sync.Once
+	isTerminal = func() bool { return term.IsTerminal(int(os.Stdout.Fd())) }
+)
 
 // Init detects terminal capability and the NO_COLOR convention.
 func Init() {
-	once.Do(func() {
-		if _, ok := os.LookupEnv("NO_COLOR"); ok {
-			Enabled = false
-			return
-		}
-		Enabled = term.IsTerminal(int(os.Stdout.Fd()))
-	})
+	once.Do(detect)
+}
+
+func detect() {
+	if _, ok := os.LookupEnv("NO_COLOR"); ok {
+		Enabled = false
+		return
+	}
+	Enabled = isTerminal()
 }
 
 // Disable turns off color output explicitly (e.g. for --no-color flag).

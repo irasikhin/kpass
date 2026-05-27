@@ -1,6 +1,7 @@
 package color
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -114,4 +115,40 @@ func TestWhite(t *testing.T) {
 	if got := White("w"); got != "w" {
 		t.Errorf("White disabled = %q", got)
 	}
+}
+
+func TestDetectNoColor(t *testing.T) {
+	t.Setenv("NO_COLOR", "1")
+	Enabled = true
+	detect()
+	if Enabled {
+		t.Error("detect() with NO_COLOR should disable")
+	}
+}
+
+func TestDetectTerminal(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
+	os.Unsetenv("NO_COLOR")
+	prev := isTerminal
+	t.Cleanup(func() { isTerminal = prev })
+
+	isTerminal = func() bool { return true }
+	Enabled = false
+	detect()
+	if !Enabled {
+		t.Error("detect() should enable when stdout is a terminal")
+	}
+
+	isTerminal = func() bool { return false }
+	Enabled = true
+	detect()
+	if Enabled {
+		t.Error("detect() should disable when stdout is not a terminal")
+	}
+}
+
+func TestInitOnce(t *testing.T) {
+	// Init wraps once.Do(detect); calling it must not panic and is idempotent.
+	Init()
+	Init()
 }
