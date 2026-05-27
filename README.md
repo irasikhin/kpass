@@ -42,7 +42,7 @@ Use `@profile` to address a non-default database: `kpass ls @personal`.
 `~/.config/kpass/config.toml`:
 
 ```toml
-default_database = "work"
+default = "work"
 
 [databases.work]
 database = "~/keepass/work.kdbx"

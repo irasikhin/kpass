@@ -26,8 +26,9 @@ var profileKeys = map[string]bool{
 }
 
 var topLevelKeys = map[string]bool{
-	"default":   true,
-	"databases": true,
+	"default":          true,
+	"default_database": true,
+	"databases":        true,
 }
 
 // Load parses the config file at the given path (or the default if empty).
@@ -62,7 +63,10 @@ func Load(explicit string) (FileConfig, string, error) {
 		}
 	}
 
-	defaultDB, _ := raw["default"].(string)
+	defaultDB, err := defaultDatabase(raw)
+	if err != nil {
+		return FileConfig{}, path, err
+	}
 	if defaultDB == "" || strings.TrimSpace(defaultDB) == "" {
 		return FileConfig{}, path, fmt.Errorf("KPass config must define a non-empty top-level 'default' database profile name.")
 	}
@@ -92,6 +96,21 @@ func Load(explicit string) (FileConfig, string, error) {
 	}
 
 	return FileConfig{DefaultDatabase: defaultDB, Databases: dbs}, path, nil
+}
+
+func defaultDatabase(raw map[string]any) (string, error) {
+	def, hasDefault := raw["default"].(string)
+	legacy, hasLegacy := raw["default_database"].(string)
+	if hasDefault && hasLegacy && def != legacy {
+		return "", fmt.Errorf("KPass config cannot define both 'default' and legacy 'default_database' with different values.")
+	}
+	if hasDefault {
+		return def, nil
+	}
+	if hasLegacy {
+		return legacy, nil
+	}
+	return "", nil
 }
 
 func parseProfile(name string, raw any, path string) (Profile, error) {
