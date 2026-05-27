@@ -31,7 +31,7 @@ kpass init                       # one-time: create a database + config
 kpass insert work/github         # add an entry
 kpass ls                         # tree view
 kpass get work/github            # show fields
-kpass copy work/github -f otp    # copy OTP to clipboard
+kpass copy work/github -F otp    # copy OTP to clipboard
 kpass search gh                  # fuzzy search by name, path, or field
 ```
 
@@ -48,9 +48,13 @@ default = "work"
 database = "~/keepass/work.kdbx"
 ```
 
-`kpass init` writes this for you. Every field beyond `database` is optional
-— key files, password sources, caching, backup retention. See
-`kpass db add --help` for the full schema.
+`kpass init` writes this for you. The full per-profile schema (key file,
+password file, password lookup from another profile, session/cache TTL,
+backup retention) is parsed by `internal/config.parseProfile`; see
+[CONTRIBUTING.md](./CONTRIBUTING.md) for the field list. `kpass db add
+NAME PATH` registers a new profile from the command line for the most
+common cases (`--password-database` + `--password-entry`, key/cache via
+the matching global flags).
 
 ## Docs
 

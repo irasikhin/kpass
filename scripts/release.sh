@@ -12,9 +12,11 @@
 #   - BREAKING CHANGE: footer  OR  <type>!:  ->  major
 #   - feat:                                  ->  minor
 #   - fix:                                   ->  patch
-#   - anything else with no feat/fix/break   ->  patch (or aborts if no
-#                                                conv-commit subject is
-#                                                present at all)
+#   - anything else (refactor, ci, docs ...) ->  patch
+#
+# Bridging from a prerelease tag (-alpha, -beta, -rc): auto / patch /
+# minor / major all refuse, because the prerelease semantics don't fit
+# the bump helpers. Pass an explicit X.Y.Z instead.
 #
 # What it does:
 #   1. Refuses to run on a dirty working tree.
