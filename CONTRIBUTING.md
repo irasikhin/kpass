@@ -119,12 +119,16 @@ git push --follow-tags
 
 Bump rule (highest impact wins):
 
-| Commit                                   | Bump  |
-|------------------------------------------|-------|
-| `BREAKING CHANGE:` footer, or `type!:`   | major |
-| `feat:`                                  | minor |
-| `fix:`                                   | patch |
-| Anything else (refactor, ci, docs, ...)  | patch |
+| Commit                                   | Bump in 0.x | Bump in 1.x+ |
+|------------------------------------------|-------------|--------------|
+| `BREAKING CHANGE:` footer, or `type!:`   | minor       | major        |
+| `feat:`                                  | minor       | minor        |
+| `fix:`                                   | patch       | patch        |
+| Anything else (refactor, ci, docs, ...)  | patch       | patch        |
+
+In 0.x, semver permits anything to break; the convention is to bump
+minor for breaking changes (`0.2.x` → `0.3.0`). Crossing `0.x` → `1.x`
+is an explicit decision — pass `1.0.0` as the version when ready.
 
 The CHANGELOG section covers everything since the last tag (including
 prereleases), but `auto`/`patch`/`minor`/`major` refuse to bump from a

@@ -9,10 +9,15 @@
 #   scripts/release.sh X.Y.Z            # explicit semver
 #
 # Conventional-commits auto-detection rule (highest impact wins):
-#   - BREAKING CHANGE: footer  OR  <type>!:  ->  major
+#   - BREAKING CHANGE: footer  OR  <type>!:  ->  major (or minor in 0.x)
 #   - feat:                                  ->  minor
 #   - fix:                                   ->  patch
 #   - anything else (refactor, ci, docs ...) ->  patch
+#
+# In 0.x semver explicitly permits anything to break, so a breaking
+# commit maps to MINOR (0.2.x -> 0.3.0). Crossing 0.x -> 1.x is an
+# explicit decision: pass 1.0.0 as the version. Once base >= 1.0,
+# breaking changes go to major per spec.
 #
 # Bridging from a prerelease tag (-alpha, -beta, -rc): auto / patch /
 # minor / major all refuse, because the prerelease semantics don't fit
@@ -54,12 +59,18 @@ fi
 prev_version="${prev_tag#v}"
 
 # Detect the conv-commit bump type for `auto`.
+#
+# In 0.x, semver permits anything to break - so `type!:` and BREAKING
+# CHANGE: footers map to MINOR (not MAJOR). Crossing 0.x -> 1.x is an
+# explicit decision the maintainer makes by passing 1.0.0 as the version.
+# Once base >= 1.0, breaking changes do go to major per spec.
 detect_bump() {
-  local range="$1" highest="" subject
+  local range="$1" base="$2" highest="" subject
+  local breaking=""
   while IFS= read -r subject; do
     [[ -z "$subject" ]] && continue
     if [[ "$subject" =~ ^[a-z]+(\([^\)]+\))?!: ]]; then
-      echo "major"; return
+      breaking="yes"
     fi
     if [[ "$subject" =~ ^feat(\([^\)]+\))?: ]] && [[ "$highest" != "minor" ]]; then
       highest="minor"
@@ -69,6 +80,13 @@ detect_bump() {
     fi
   done < <(git log --no-merges "$range" --format='%s')
   if git log --no-merges "$range" --format='%b' | grep -qE '^BREAKING CHANGE:'; then
+    breaking="yes"
+  fi
+  if [[ "$breaking" == "yes" ]]; then
+    # 0.x: breaking -> minor (semver allows it). >=1.x: breaking -> major.
+    if [[ "$base" =~ ^0\. ]]; then
+      echo "minor"; return
+    fi
     echo "major"; return
   fi
   echo "${highest:-patch}"
@@ -93,7 +111,7 @@ bump_from() {
 
 case "$bump" in
   auto)
-    bump_type="$(detect_bump "${prev_tag}..HEAD")"
+    bump_type="$(detect_bump "${prev_tag}..HEAD" "$prev_version")"
     echo "Auto-detected bump: ${bump_type} (since ${prev_tag})"
     new_version="$(bump_from "$prev_version" "$bump_type")"
     ;;
