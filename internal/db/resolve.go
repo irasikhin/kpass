@@ -22,26 +22,26 @@ func (d *DB) ResolveEntry(query string) (*Entry, error) {
 	}
 
 	entries := d.SortedEntries()
-	pathMatches := filterEntries(entries, func(e *Entry) bool {
+	pathMatches := filterSlice(entries, func(e *Entry) bool {
 		return e.DisplayPath() == normalized
 	})
 	if len(pathMatches) > 0 {
-		return uniqueOrErrorEntry(pathMatches, query, "entry")
+		return uniqueOrError(pathMatches, query, "entry")
 	}
 
-	titleMatches := filterEntries(entries, func(e *Entry) bool {
+	titleMatches := filterSlice(entries, func(e *Entry) bool {
 		return e.Title() == normalized
 	})
 	if len(titleMatches) > 0 {
-		return uniqueOrErrorEntry(titleMatches, query, "entry")
+		return uniqueOrError(titleMatches, query, "entry")
 	}
 
 	needle := strings.ToLower(normalized)
-	partial := filterEntries(entries, func(e *Entry) bool {
+	partial := filterSlice(entries, func(e *Entry) bool {
 		return strings.Contains(strings.ToLower(e.DisplayPath()), needle) ||
 			strings.Contains(strings.ToLower(e.Title()), needle)
 	})
-	return uniqueOrErrorEntry(partial, query, "entry")
+	return uniqueOrError(partial, query, "entry")
 }
 
 // FindEntryByExactPath returns the entry with the given exact path, or nil.
@@ -65,49 +65,44 @@ func (d *DB) ResolveGroup(query string) (*Group, error) {
 		return d.RootGroup(), nil
 	}
 	groups := d.SortedGroups()
-	pathMatches := filterGroups(groups, func(g *Group) bool {
+	pathMatches := filterSlice(groups, func(g *Group) bool {
 		return g.DisplayPath() == normalized
 	})
 	if len(pathMatches) > 0 {
-		return uniqueOrErrorGroup(pathMatches, query, "group")
+		return uniqueOrError(pathMatches, query, "group")
 	}
-	nameMatches := filterGroups(groups, func(g *Group) bool {
+	nameMatches := filterSlice(groups, func(g *Group) bool {
 		return g.Name() == normalized
 	})
 	if len(nameMatches) > 0 {
-		return uniqueOrErrorGroup(nameMatches, query, "group")
+		return uniqueOrError(nameMatches, query, "group")
 	}
 	needle := strings.ToLower(normalized)
-	partial := filterGroups(groups, func(g *Group) bool {
+	partial := filterSlice(groups, func(g *Group) bool {
 		return strings.Contains(strings.ToLower(g.DisplayPath()), needle) ||
 			strings.Contains(strings.ToLower(g.Name()), needle)
 	})
-	return uniqueOrErrorGroup(partial, query, "group")
+	return uniqueOrError(partial, query, "group")
 }
 
-func filterEntries(in []*Entry, pred func(*Entry) bool) []*Entry {
+func filterSlice[T any](in []T, pred func(T) bool) []T {
 	out := in[:0:0]
-	for _, e := range in {
-		if pred(e) {
-			out = append(out, e)
+	for _, x := range in {
+		if pred(x) {
+			out = append(out, x)
 		}
 	}
 	return out
 }
 
-func filterGroups(in []*Group, pred func(*Group) bool) []*Group {
-	out := in[:0:0]
-	for _, g := range in {
-		if pred(g) {
-			out = append(out, g)
-		}
-	}
-	return out
-}
+// pathItem covers both *Entry and *Group so resolution errors can render the
+// candidate list the same way for either kind.
+type pathItem interface{ DisplayPath() string }
 
-func uniqueOrErrorEntry(matches []*Entry, query, kind string) (*Entry, error) {
+func uniqueOrError[T pathItem](matches []T, query, kind string) (T, error) {
+	var zero T
 	if len(matches) == 0 {
-		return nil, &MatchError{Msg: fmt.Sprintf("%s not found: %s", capitalize(kind), query)}
+		return zero, &MatchError{Msg: fmt.Sprintf("%s not found: %s", capitalize(kind), query)}
 	}
 	if len(matches) > 1 {
 		rendered := make([]string, 0, len(matches))
@@ -121,28 +116,7 @@ func uniqueOrErrorEntry(matches []*Entry, query, kind string) (*Entry, error) {
 		if len(matches) > 8 {
 			suffix = " ..."
 		}
-		return nil, &MatchError{Msg: fmt.Sprintf("Ambiguous %s '%s': %s%s", kind, query, strings.Join(rendered, ", "), suffix)}
-	}
-	return matches[0], nil
-}
-
-func uniqueOrErrorGroup(matches []*Group, query, kind string) (*Group, error) {
-	if len(matches) == 0 {
-		return nil, &MatchError{Msg: fmt.Sprintf("%s not found: %s", capitalize(kind), query)}
-	}
-	if len(matches) > 1 {
-		rendered := make([]string, 0, len(matches))
-		for i, m := range matches {
-			if i == 8 {
-				break
-			}
-			rendered = append(rendered, m.DisplayPath())
-		}
-		suffix := ""
-		if len(matches) > 8 {
-			suffix = " ..."
-		}
-		return nil, &MatchError{Msg: fmt.Sprintf("Ambiguous %s '%s': %s%s", kind, query, strings.Join(rendered, ", "), suffix)}
+		return zero, &MatchError{Msg: fmt.Sprintf("Ambiguous %s '%s': %s%s", kind, query, strings.Join(rendered, ", "), suffix)}
 	}
 	return matches[0], nil
 }

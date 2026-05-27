@@ -196,7 +196,7 @@ func truncate(s string, max int) string {
 }
 
 func walkSimple(b *strings.Builder, n *simpleNode, prefix string, _ int) {
-	names := sortedNamesSimple(n)
+	names := sortedChildNames(n.children)
 	for i, name := range names {
 		isLast := i == len(names)-1
 		connector := "├── "
@@ -219,7 +219,7 @@ func walkSimple(b *strings.Builder, n *simpleNode, prefix string, _ int) {
 }
 
 func walkRich(b *strings.Builder, n *richNode, prefix string, currentDepth int, maxDepth int) {
-	names := sortedNamesRich(n)
+	names := sortedChildNames(n.children)
 	for i, name := range names {
 		isLast := i == len(names)-1
 		connector := "├── "
@@ -249,20 +249,9 @@ func walkRich(b *strings.Builder, n *richNode, prefix string, currentDepth int, 
 	}
 }
 
-func sortedNamesSimple(n *simpleNode) []string {
-	names := make([]string, 0, len(n.children))
-	for k := range n.children {
-		names = append(names, k)
-	}
-	sort.Slice(names, func(i, j int) bool {
-		return strings.ToLower(names[i]) < strings.ToLower(names[j])
-	})
-	return names
-}
-
-func sortedNamesRich(n *richNode) []string {
-	names := make([]string, 0, len(n.children))
-	for k := range n.children {
+func sortedChildNames[V any](m map[string]V) []string {
+	names := make([]string, 0, len(m))
+	for k := range m {
 		names = append(names, k)
 	}
 	sort.Slice(names, func(i, j int) bool {
