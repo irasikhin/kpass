@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/tobischo/gokeepasslib/v3"
+	w "github.com/tobischo/gokeepasslib/v3/wrappers"
 
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
@@ -60,10 +61,6 @@ func (g *Group) Name() string {
 	return g.Path[len(g.Path)-1]
 }
 
-func entryGet(e *gokeepasslib.Entry, key string) string {
-	return e.GetContent(key)
-}
-
 func entrySet(e *gokeepasslib.Entry, key, value string, protected bool) {
 	if i := e.GetIndex(key); i >= 0 {
 		e.Values[i].Value.Content = value
@@ -71,13 +68,10 @@ func entrySet(e *gokeepasslib.Entry, key, value string, protected bool) {
 	}
 	v := gokeepasslib.ValueData{Key: key, Value: gokeepasslib.V{Content: value}}
 	if protected {
-		v.Value.Protected = newBoolWrapper(true)
+		v.Value.Protected = w.NewBoolWrapper(true)
 	}
 	e.Values = append(e.Values, v)
 }
-
-// EntryTitle gets the title; pykeepass treats it specially.
-func entryTitle(e *gokeepasslib.Entry) string { return e.GetContent("Title") }
 
 // Tags returns the tags on this entry.
 func (e *Entry) Tags() []string { return entryTags(e.e) }
