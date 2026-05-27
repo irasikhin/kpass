@@ -11,38 +11,22 @@ import (
 	"strings"
 )
 
-type PickOption func(*pickConfig)
-
-type pickConfig struct {
-	preview   string
-	delimiter string
-	withNth   string
-}
-
-func WithPreview(expr string) PickOption {
-	return func(c *pickConfig) { c.preview = expr }
-}
-func WithDelimiter(d string) PickOption {
-	return func(c *pickConfig) { c.delimiter = d }
-}
-func WithWithNth(n string) PickOption {
-	return func(c *pickConfig) { c.withNth = n }
+// PickOpts tweaks the fzf invocation. Zero-value disables all decorations.
+type PickOpts struct {
+	Preview   string // --preview expression
+	Delimiter string // --delimiter for multi-column input
+	WithNth   string // --with-nth visible columns
 }
 
 // Hook is the test injection seam.
 var Hook func(paths []string, query string) (string, error)
 
-func Pick(lines []string, query string, opts ...PickOption) (string, error) {
+func Pick(lines []string, query string, opts PickOpts) (string, error) {
 	if Hook != nil {
 		return Hook(lines, query)
 	}
 	if len(lines) == 0 {
 		return "", errors.New("no entries found.")
-	}
-
-	cfg := &pickConfig{}
-	for _, o := range opts {
-		o(cfg)
 	}
 
 	binary, err := exec.LookPath("fzf")
@@ -55,14 +39,14 @@ func Pick(lines []string, query string, opts ...PickOption) (string, error) {
 	if query != "" {
 		args = append(args, "-q", query)
 	}
-	if cfg.preview != "" {
-		args = append(args, "--preview", cfg.preview)
+	if opts.Preview != "" {
+		args = append(args, "--preview", opts.Preview)
 	}
-	if cfg.delimiter != "" {
-		args = append(args, "--delimiter", cfg.delimiter)
+	if opts.Delimiter != "" {
+		args = append(args, "--delimiter", opts.Delimiter)
 	}
-	if cfg.withNth != "" {
-		args = append(args, "--with-nth", cfg.withNth)
+	if opts.WithNth != "" {
+		args = append(args, "--with-nth", opts.WithNth)
 	}
 
 	cmd := exec.Command(binary, args...)

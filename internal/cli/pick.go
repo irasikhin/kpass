@@ -70,16 +70,16 @@ func (cmd *PickCmd) pickEntry(c *ctx) (*db.Entry, string, error) {
 		return nil, "", &UserError{Msg: "No entries match the tag filter."}
 	}
 
-	var opts []picker.PickOption
+	var opts picker.PickOpts
 	if cmd.Preview {
-		opts = append(opts,
-			picker.WithPreview(`printf 'Path:     {1}\nUsername:  {2}\nURL:       {3}'`),
-			picker.WithDelimiter("\t"),
-			picker.WithWithNth("1"),
-		)
+		opts = picker.PickOpts{
+			Preview:   `printf 'Path:     {1}\nUsername:  {2}\nURL:       {3}'`,
+			Delimiter: "\t",
+			WithNth:   "1",
+		}
 	}
 
-	selected, err := picker.Pick(lines, cmd.Query, opts...)
+	selected, err := picker.Pick(lines, cmd.Query, opts)
 	if err != nil {
 		return nil, "", &UserError{Msg: err.Error()}
 	}
