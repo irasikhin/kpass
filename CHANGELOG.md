@@ -10,6 +10,36 @@ commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## [Unreleased]
 
+## [0.1.0-alpha.3] — 2026-05-27
+
+### Fixed
+
+- mark intentional return-nil-on-error cases for nilerr (49a05d9)
+- gate release smoke test by GOARCH=amd64 (60de487)
+
+### Refactored
+
+- drop dead trailing newlines, switch-with-one-case, and inefficient builders (659c448)
+- drop unused printVersion and test helpers (5cc111a)
+- drop unused parameters and results flagged by unparam (fadf157)
+
+### Build
+
+- bump golangci/golangci-lint-action from 6 to 9 (2a8ea7f)
+- bump actions/setup-go from 5 to 6 (331b57b)
+- bump actions/upload-artifact from 4 to 7 (4888d12)
+- bump actions/download-artifact from 4 to 8 (8fac367)
+- bump softprops/action-gh-release from 2 to 3 (635e0c0)
+
+### CI
+
+- migrate golangci-lint config and CI to v2.12.2 (cb23ed4)
+
+### Style
+
+- lowercase error strings and drop trailing punctuation (4f78453)
+
+
 ## [0.1.0-alpha.2] — 2026-05-27
 
 ### Added
@@ -92,3 +122,4 @@ until 1.0.
 [Unreleased]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...HEAD
 [0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
 [0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
+[0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.2...v0.1.0-alpha.3

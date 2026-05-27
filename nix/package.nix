@@ -8,7 +8,7 @@
 
 let
   pname = "kpass";
-  version = "0.1.0-alpha.2";
+  version = "0.1.0-alpha.3";
 in
 buildGoModule {
   inherit pname version;
