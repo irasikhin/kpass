@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"sort"
 	"strings"
@@ -295,7 +296,7 @@ func buildCombinePlan(src, dst *db.Entry, only map[string]bool, policy string, c
 			// Conflict: same-named attachment exists on dst. Compare bytes —
 			// identical content means no real conflict, skip silently.
 			dstData, err := dst.AttachmentContent(name)
-			if err == nil && bytesEqual(data, dstData) {
+			if err == nil && bytes.Equal(data, dstData) {
 				continue
 			}
 			act, err := resolveConflict(c, reader, "attachment", name,
@@ -471,14 +472,4 @@ func truncDisplay(s string) string {
 	return s
 }
 
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
+

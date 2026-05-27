@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/tobischo/gokeepasslib/v3"
 
@@ -100,16 +101,12 @@ func (d *DB) UniqueEntryPath(groupPath, title, suffix string) string {
 			return path
 		}
 		if suffix != "" {
-			candidate = title + " (" + suffix + " " + itoa(index) + ")"
+			candidate = title + " (" + suffix + " " + strconv.Itoa(index) + ")"
 		} else {
-			candidate = title + " (" + itoa(index) + ")"
+			candidate = title + " (" + strconv.Itoa(index) + ")"
 		}
 		index++
 	}
-}
-
-func itoa(n int) string {
-	return fmt.Sprintf("%d", n)
 }
 
 func (d *DB) entryPathExists(path string) bool {

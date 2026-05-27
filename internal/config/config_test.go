@@ -469,9 +469,9 @@ func TestTrimSpace(t *testing.T) {
 		{"\t\n  world  \n\t", "world"},
 	}
 	for _, tt := range tests {
-		got := trimSpace(tt.in)
+		got := strings.TrimSpace(tt.in)
 		if got != tt.want {
-			t.Errorf("trimSpace(%q) = %q, want %q", tt.in, got, tt.want)
+			t.Errorf("strings.TrimSpace(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }
@@ -502,14 +502,14 @@ func TestAsBool(t *testing.T) {
 	}
 }
 
-func TestJoinComma(t *testing.T) {
-	if got := joinComma([]string{"a", "b", "c"}); got != "a, b, c" {
-		t.Errorf("joinComma = %q", got)
+func TestJoin(t *testing.T) {
+	if got := strings.Join([]string{"a", "b", "c"}, ", "); got != "a, b, c" {
+		t.Errorf("strings.Join = %q", got)
 	}
-	if got := joinComma([]string{"x"}); got != "x" {
-		t.Errorf("joinComma = %q", got)
+	if got := strings.Join([]string{"x"}, ", "); got != "x" {
+		t.Errorf("strings.Join = %q", got)
 	}
-	if got := joinComma(nil); got != "" {
-		t.Errorf("joinComma(nil) = %q", got)
+	if got := strings.Join(nil, ", "); got != "" {
+		t.Errorf("strings.Join(nil) = %q", got)
 	}
 }

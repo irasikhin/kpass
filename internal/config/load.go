@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -57,12 +58,12 @@ func Load(explicit string) (FileConfig, string, error) {
 	for k := range raw {
 		if !topLevelKeys[k] {
 			unknown := sortedUnknown(raw, topLevelKeys)
-			return FileConfig{}, path, fmt.Errorf("Unsupported KPass config key(s): %s", joinComma(unknown))
+			return FileConfig{}, path, fmt.Errorf("Unsupported KPass config key(s): %s", strings.Join(unknown, ", "))
 		}
 	}
 
 	defaultDB, _ := raw["default"].(string)
-	if defaultDB == "" || trimSpace(defaultDB) == "" {
+	if defaultDB == "" || strings.TrimSpace(defaultDB) == "" {
 		return FileConfig{}, path, fmt.Errorf("KPass config must define a non-empty top-level 'default' database profile name.")
 	}
 
@@ -107,11 +108,11 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	}
 	if len(unknown) > 0 {
 		sort.Strings(unknown)
-		return Profile{}, fmt.Errorf("Unsupported KPass config key(s) in profile '%s': %s", name, joinComma(unknown))
+		return Profile{}, fmt.Errorf("Unsupported KPass config key(s) in profile '%s': %s", name, strings.Join(unknown, ", "))
 	}
 
 	database, ok := data["database"].(string)
-	if !ok || trimSpace(database) == "" {
+	if !ok || strings.TrimSpace(database) == "" {
 		return Profile{}, fmt.Errorf("KPass database profile '%s' must define a non-empty 'database' path.", name)
 	}
 
@@ -204,27 +205,6 @@ func sortedUnknown(m map[string]any, known map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
-}
-
-func joinComma(values []string) string {
-	out := ""
-	for i, v := range values {
-		if i > 0 {
-			out += ", "
-		}
-		out += v
-	}
-	return out
-}
-
-func trimSpace(s string) string {
-	for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n' || s[0] == '\r') {
-		s = s[1:]
-	}
-	for len(s) > 0 && (s[len(s)-1] == ' ' || s[len(s)-1] == '\t' || s[len(s)-1] == '\n' || s[len(s)-1] == '\r') {
-		s = s[:len(s)-1]
-	}
-	return s
 }
 
 func asInt(v any) (int, error) {

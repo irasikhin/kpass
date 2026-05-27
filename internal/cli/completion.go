@@ -158,16 +158,6 @@ func WriteEntryCache(profile string, paths []string) error {
 	return f.Close()
 }
 
-var onDBOpen func(profile string, paths []string)
-
-// NotifyDBOpen is called by the cli package after a successful database open,
-// so the completion cache can be refreshed.
-func NotifyDBOpen(profile string, paths []string) {
-	if onDBOpen != nil {
-		onDBOpen(profile, paths)
-	}
-}
-
 // --- static completion scripts ---
 
 // bashCompletionScript is the bash completion function. It delegates dynamic

@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // AttachmentList returns the entry's attachment names sorted case-insensitively.
@@ -11,7 +12,7 @@ func (e *Entry) AttachmentList() []string {
 	for _, b := range e.e.Binaries {
 		names = append(names, b.Name)
 	}
-	sort.Slice(names, func(i, j int) bool { return lower(names[i]) < lower(names[j]) })
+	sort.Slice(names, func(i, j int) bool { return strings.ToLower(names[i]) < strings.ToLower(names[j]) })
 	return names
 }
 
@@ -68,14 +69,4 @@ func (e *Entry) findBinary(name string) int {
 	return -1
 }
 
-func lower(s string) string {
-	out := make([]byte, len(s))
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c >= 'A' && c <= 'Z' {
-			c += 32
-		}
-		out[i] = c
-	}
-	return string(out)
-}
+

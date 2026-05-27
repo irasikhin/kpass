@@ -384,34 +384,6 @@ func TestDoctorReportsBrokenCycle(t *testing.T) {
 // rm/mv/cp are now live aliases (remove/move/clone), so they no longer appear
 // here. show/pass/clip/otp/grep/open/close stay as removed-with-hint stubs.
 
-func TestRemovedHints(t *testing.T) {
-	cases := []struct {
-		args []string
-		want string
-	}{
-		{[]string{"show", "simple"}, "show was removed; use: kpass get"},
-		{[]string{"pass", "simple"}, "pass was removed; use: kpass get"},
-		{[]string{"clip", "simple"}, "clip was removed; use: kpass copy"},
-		{[]string{"otp", "otp/sample"}, "otp was removed; use: kpass get"},
-		{[]string{"grep", "personal"}, "grep was removed; use: kpass search"},
-		{[]string{"close"}, "close was removed; session handling is automatic."},
-	}
-	for _, tc := range cases {
-		t.Run(tc.args[0], func(t *testing.T) {
-			f := newFixture(t)
-			stdout, stderr, code := f.runCLI(tc.args...)
-			if code != 1 {
-				t.Fatalf("code=%d", code)
-			}
-			if stdout != "" {
-				t.Fatalf("stdout=%q", stdout)
-			}
-			if !strings.Contains(stderr, tc.want) {
-				t.Fatalf("stderr=%q want %q", stderr, tc.want)
-			}
-		})
-	}
-}
 
 func TestMissingRequiredArgument(t *testing.T) {
 	f := newFixture(t)

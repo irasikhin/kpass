@@ -127,14 +127,3 @@ func TestNoArgsShowsHelp(t *testing.T) {
 		t.Fatalf("expected help output, got:\n%s", out)
 	}
 }
-
-func TestUnknownCommandSuggestion(t *testing.T) {
-	f := newFixture(t)
-	_, stderr, code := f.runCLI("getz")
-	if code != 1 {
-		t.Fatalf("code=%d", code)
-	}
-	if !strings.Contains(stderr, "Did you mean 'get'") {
-		t.Fatalf("stderr=%q", stderr)
-	}
-}

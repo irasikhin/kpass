@@ -126,8 +126,4 @@ func WriteWithAutoClear(value string, timeout int) error {
 	return nil
 }
 
-// InitClipboard is a no-op kept for API compatibility.
-func InitClipboard() {}
 
-func ClearAfterTimeout(_ string, _ int, _ string) int { return 0 }
-func formatTimeout(n int) string                      { return fmt.Sprintf("%d", n) }

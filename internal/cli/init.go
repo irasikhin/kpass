@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/irasikhin/kpass/internal/config"
 	"github.com/irasikhin/kpass/internal/db"
@@ -114,23 +113,8 @@ func ensureConfig(dbPath, keyFile string) (string, error) {
 		}
 	}
 
-	if err := writeTOMLFile(cfgPath, fc); err != nil {
+	if err := config.WriteAtomic(cfgPath, fc); err != nil {
 		return "", fmt.Errorf("cannot write config: %w", err)
 	}
 	return cfgPath, nil
-}
-
-// writeTOMLFile writes a minimal TOML config file.
-func writeTOMLFile(path string, fc config.FileConfig) error {
-	var buf strings.Builder
-	buf.WriteString(fmt.Sprintf("default_database = %q\n\n", fc.DefaultDatabase))
-	for name, p := range fc.Databases {
-		buf.WriteString(fmt.Sprintf("[databases.%s]\n", name))
-		buf.WriteString(fmt.Sprintf("database = %q\n", p.Database))
-		if p.KeyFile != "" {
-			buf.WriteString(fmt.Sprintf("key_file = %q\n", p.KeyFile))
-		}
-		buf.WriteString("\n")
-	}
-	return os.WriteFile(path, []byte(buf.String()), 0o600)
 }
