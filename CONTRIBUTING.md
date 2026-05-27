@@ -17,6 +17,8 @@ pre-commit install --hook-type commit-msg
 go test ./...               # unit + integration tests
 go vet ./...                # static analysis
 golangci-lint run ./...     # full lint suite (config in .golangci.yml)
+nix flake check --no-build  # Nix flake evaluation
+nix build .#kpass --no-link # Nix package build
 pre-commit run --all-files # all hooks at once
 go build ./cmd/kpass        # local binary
 ```
