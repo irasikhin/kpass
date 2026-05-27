@@ -104,18 +104,36 @@ Subject line rules:
 
 ## Releasing
 
-Releases are tag-driven. After merging the bumping commit(s), the maintainer
+Releases are tag-driven and version is derived from
+[Conventional Commits](https://www.conventionalcommits.org/) since the
+previous stable tag. After merging the bumping commit(s), the maintainer
 runs:
 
 ```bash
-./scripts/release.sh patch    # or minor / major / X.Y.Z
+./scripts/release.sh                # auto-detect bump from commit history
+./scripts/release.sh auto           # same as above, explicit
+./scripts/release.sh patch          # manual override
+./scripts/release.sh X.Y.Z          # explicit version (e.g. for transitions)
 git push --follow-tags
 ```
 
+Bump rule (highest impact wins):
+
+| Commit                                   | Bump  |
+|------------------------------------------|-------|
+| `BREAKING CHANGE:` footer, or `type!:`   | major |
+| `feat:`                                  | minor |
+| `fix:`                                   | patch |
+| Anything else (refactor, ci, docs, ...)  | patch |
+
+The CHANGELOG section covers everything since the last tag (including
+prereleases), but `auto`/`patch`/`minor`/`major` refuse to bump from a
+prerelease base — pass an explicit `X.Y.Z` for the transition out of an
+alpha/beta/rc series.
+
 The release script:
 
-* picks the next semver from your argument (or derives one from the commits
-  since the last tag),
+* computes the next semver from commits since the last stable tag,
 * updates `version` in `nix/package.nix` to match,
 * writes a new section to `CHANGELOG.md` grouping commits by type,
 * commits with `chore(release): vX.Y.Z`, then tags `vX.Y.Z`.

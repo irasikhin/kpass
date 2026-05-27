@@ -2,12 +2,23 @@
 # Cut a new release.
 #
 # Usage:
-#   scripts/release.sh <version>      # explicit semver, e.g. 0.3.0
-#   scripts/release.sh patch|minor|major   # auto-bump from the last tag
+#   scripts/release.sh                  # auto-detect bump from Conventional
+#                                       # Commits since the last tag (default)
+#   scripts/release.sh auto             # same as above, explicit
+#   scripts/release.sh patch|minor|major   # manual bump from the last tag
+#   scripts/release.sh X.Y.Z            # explicit semver
+#
+# Conventional-commits auto-detection rule (highest impact wins):
+#   - BREAKING CHANGE: footer  OR  <type>!:  ->  major
+#   - feat:                                  ->  minor
+#   - fix:                                   ->  patch
+#   - anything else with no feat/fix/break   ->  patch (or aborts if no
+#                                                conv-commit subject is
+#                                                present at all)
 #
 # What it does:
 #   1. Refuses to run on a dirty working tree.
-#   2. Computes the next version from your argument.
+#   2. Computes the next version from your argument (or commit history).
 #   3. Generates a CHANGELOG.md section from `git log <prev-tag>..HEAD`
 #      grouped by Conventional Commit type. The user is dropped into $EDITOR
 #      to review/edit before committing.
@@ -21,33 +32,71 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-if [[ $# -ne 1 ]]; then
-  echo "usage: $0 <patch|minor|major|X.Y.Z>" >&2
+if [[ $# -gt 1 ]]; then
+  echo "usage: $0 [auto|patch|minor|major|X.Y.Z]" >&2
   exit 2
 fi
-bump="$1"
+bump="${1:-auto}"
 
 if ! git diff-index --quiet HEAD --; then
   echo "error: working tree is dirty; commit or stash first." >&2
   exit 1
 fi
 
-# Last v* tag (lexicographic is wrong; use --sort).
+# Last v* tag (any kind, including prereleases). Used as the CHANGELOG
+# comparison base so the section covers everything users could install.
 prev_tag="$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n1 || true)"
 if [[ -z "$prev_tag" ]]; then
   prev_tag="v0.0.0"
 fi
 prev_version="${prev_tag#v}"
 
+# Detect the conv-commit bump type for `auto`.
+detect_bump() {
+  local range="$1" highest="" subject
+  while IFS= read -r subject; do
+    [[ -z "$subject" ]] && continue
+    if [[ "$subject" =~ ^[a-z]+(\([^\)]+\))?!: ]]; then
+      echo "major"; return
+    fi
+    if [[ "$subject" =~ ^feat(\([^\)]+\))?: ]] && [[ "$highest" != "minor" ]]; then
+      highest="minor"
+    fi
+    if [[ "$subject" =~ ^fix(\([^\)]+\))?: ]] && [[ -z "$highest" ]]; then
+      highest="patch"
+    fi
+  done < <(git log --no-merges "$range" --format='%s')
+  if git log --no-merges "$range" --format='%b' | grep -q 'BREAKING CHANGE:'; then
+    echo "major"; return
+  fi
+  echo "${highest:-patch}"
+}
+
+bump_from() {
+  # Apply patch/minor/major bump to a stable semver. Refuses prereleases.
+  local base="$1" kind="$2"
+  if [[ "$base" =~ - ]]; then
+    echo "error: cannot ${kind}-bump from prerelease tag (${base}); pass explicit X.Y.Z." >&2
+    exit 1
+  fi
+  local major minor patch
+  IFS='.' read -r major minor patch <<<"$base"
+  case "$kind" in
+    major) major=$((major+1)); minor=0; patch=0 ;;
+    minor) minor=$((minor+1)); patch=0 ;;
+    patch) patch=$((patch+1)) ;;
+  esac
+  echo "${major}.${minor}.${patch}"
+}
+
 case "$bump" in
+  auto)
+    bump_type="$(detect_bump "${prev_tag}..HEAD")"
+    echo "Auto-detected bump: ${bump_type} (since ${prev_tag})"
+    new_version="$(bump_from "$prev_version" "$bump_type")"
+    ;;
   patch|minor|major)
-    IFS='.' read -r major minor patch <<<"$prev_version"
-    case "$bump" in
-      major) major=$((major+1)); minor=0; patch=0 ;;
-      minor) minor=$((minor+1)); patch=0 ;;
-      patch) patch=$((patch+1)) ;;
-    esac
-    new_version="${major}.${minor}.${patch}"
+    new_version="$(bump_from "$prev_version" "$bump")"
     ;;
   *)
     if ! [[ "$bump" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
