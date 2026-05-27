@@ -384,7 +384,6 @@ func TestDoctorReportsBrokenCycle(t *testing.T) {
 // rm/mv/cp are now live aliases (remove/move/clone), so they no longer appear
 // here. show/pass/clip/otp/grep/open/close stay as removed-with-hint stubs.
 
-
 func TestMissingRequiredArgument(t *testing.T) {
 	f := newFixture(t)
 	stdout, stderr, code := f.runCLI("get")

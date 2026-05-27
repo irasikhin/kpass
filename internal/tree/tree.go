@@ -179,11 +179,11 @@ func RenderLong(entries []*EntryInfo) string {
 			att = fmt.Sprintf("  %2d", e.AttachCount)
 		}
 		b.WriteByte('\n')
-		b.WriteString(fmt.Sprintf("%-*s  %-*s  %-*s  %s  %s  %s",
+		fmt.Fprintf(&b, "%-*s  %-*s  %-*s  %s  %s  %s",
 			maxPath, e.Path,
 			maxUser, e.Username,
 			maxURL, truncate(e.URL, maxURL),
-			totp, att, e.Tags))
+			totp, att, e.Tags)
 	}
 	return b.String()
 }

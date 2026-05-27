@@ -125,5 +125,3 @@ func WriteWithAutoClear(value string, timeout int) error {
 	}()
 	return nil
 }
-
-

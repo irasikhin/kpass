@@ -15,7 +15,7 @@ import (
 // passwordStrengthLine returns a one-line strength display for a password.
 func passwordStrengthLine(password string) string {
 	s := pwgen.Assess(password)
-	label := s.Label
+	var label string
 	switch {
 	case s.Bits < 28:
 		label = color.Red(s.Label)

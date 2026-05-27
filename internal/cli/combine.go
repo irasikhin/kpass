@@ -471,5 +471,3 @@ func truncDisplay(s string) string {
 	}
 	return s
 }
-
-

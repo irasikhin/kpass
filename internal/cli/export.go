@@ -65,7 +65,7 @@ func (cmd *ExportCmd) Run(c *ctx) error {
 		return &UserError{Msg: "No entries to export."}
 	}
 
-	var out io.Writer = c.out
+	var out = c.out
 	var f *os.File
 	if cmd.Output != "" {
 		outputPath := runtimex.ExpandPath(cmd.Output)

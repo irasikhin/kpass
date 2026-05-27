@@ -73,8 +73,7 @@ func Run(argv []string, in io.Reader, out, errw io.Writer) int {
 
 	c := &ctx{in: in, out: out, errw: errw}
 	if err := runOnce(c, argv); err != nil {
-		switch {
-		case errors.Is(err, context.Canceled):
+		if errors.Is(err, context.Canceled) {
 			fmt.Fprintln(errw, color.Yellow("Interrupted."))
 			return 130
 		}

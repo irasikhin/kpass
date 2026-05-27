@@ -68,5 +68,3 @@ func (e *Entry) findBinary(name string) int {
 	}
 	return -1
 }
-
-
