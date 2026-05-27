@@ -1,7 +1,7 @@
 # kpass
 
 [![CI](https://github.com/irasikhin/kpass/actions/workflows/ci.yml/badge.svg)](https://github.com/irasikhin/kpass/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-82.6%25-brightgreen.svg)](#testing)
+[![Coverage](https://img.shields.io/badge/coverage-88.2%25-brightgreen.svg)](#testing)
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -75,23 +75,23 @@ go tool cover -func=cov.out | tail -1         # total coverage
 go tool cover -html=cov.out -o cov.html       # browseable report
 ```
 
-Current coverage: **82.6%** total. Per package:
+Current coverage: **88.2%** total. Per package:
 
 | Package              | Coverage |
 | -------------------- | -------- |
 | `cmd/kpass`          | 100.0%   |
-| `internal/config`    | 98.5%    |
-| `internal/picker`    | 97.0%    |
-| `internal/runtimex`  | 96.5%    |
-| `internal/tree`      | 95.1%    |
-| `internal/otp`       | 93.1%    |
-| `internal/editor`    | 92.7%    |
-| `internal/db`        | 92.5%    |
-| `internal/clip`      | 90.8%    |
-| `internal/cache`     | 90.3%    |
-| `internal/pwgen`     | 89.0%    |
-| `internal/color`     | 88.1%    |
-| `internal/cli`       | 75.7%    |
+| `internal/cache`     | 100.0%   |
+| `internal/clip`      | 100.0%   |
+| `internal/color`     | 100.0%   |
+| `internal/config`    | 100.0%   |
+| `internal/db`        | 100.0%   |
+| `internal/editor`    | 100.0%   |
+| `internal/otp`       | 100.0%   |
+| `internal/picker`    | 100.0%   |
+| `internal/pwgen`     | 100.0%   |
+| `internal/runtimex`  | 100.0%   |
+| `internal/tree`      | 100.0%   |
+| `internal/cli`       | 80.8%    |
 
 ## License
 
