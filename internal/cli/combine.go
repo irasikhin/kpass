@@ -110,7 +110,7 @@ func (cmd *CombineCmd) Run(c *ctx) error {
 		}
 	}
 
-	applyCombinePlan(c.db, dst, plan)
+	applyCombinePlan(dst, plan)
 	if cmd.DeleteSrc {
 		if err := c.db.DeleteEntry(src); err != nil {
 			return &UserError{Msg: err.Error()}
@@ -356,7 +356,7 @@ func resolveConflict(c *ctx, reader *bufio.Reader, kind, name, srcVal, dstVal, p
 
 // --- application ------------------------------------------------------------
 
-func applyCombinePlan(d *db.DB, dst *db.Entry, plan *combinePlan) {
+func applyCombinePlan(dst *db.Entry, plan *combinePlan) {
 	for _, it := range plan.Items {
 		switch it.Kind {
 		case "field":

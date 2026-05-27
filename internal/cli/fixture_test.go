@@ -186,11 +186,10 @@ func newDB(t *testing.T, password string) (*gokeepasslib.Database, *gokeepasslib
 	return db, &db.Content.Root.Groups[0]
 }
 
-func addGroup(parent *gokeepasslib.Group, name string) *gokeepasslib.Group {
+func addGroup(parent *gokeepasslib.Group, name string) {
 	g := gokeepasslib.NewGroup()
 	g.Name = name
 	parent.Groups = append(parent.Groups, g)
-	return &parent.Groups[len(parent.Groups)-1]
 }
 
 func addEntry(parent *gokeepasslib.Group, title string, f entryFields) *gokeepasslib.Entry {

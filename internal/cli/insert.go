@@ -81,7 +81,7 @@ func (cmd *InsertCmd) Run(c *ctx) error {
 		parts := runtimex.SplitPath(target)
 		title := parts[len(parts)-1]
 		parent := c.db.EnsureGroup(runtimex.JoinPath(parts[:len(parts)-1]))
-		entry := c.db.CreateEntry(parent, title, derefOr(cmd.Username, ""), password, derefOr(cmd.URL, ""), derefOr(cmd.Notes, ""), derefOr(cmd.OTP, ""))
+		entry := c.db.CreateEntry(parent, title, derefOr(cmd.Username), password, derefOr(cmd.URL), derefOr(cmd.Notes), derefOr(cmd.OTP))
 		c.db.ApplyFields(entry, cmd.Username, cmd.URL, cmd.Notes, cmd.OTP, true)
 		if len(cmd.Tags) > 0 {
 			entry.SetTags(cmd.Tags)
@@ -121,9 +121,9 @@ func applyCustomFields(entry *db.Entry, fields []string) error {
 	return nil
 }
 
-func derefOr(p *string, fallback string) string {
+func derefOr(p *string) string {
 	if p == nil {
-		return fallback
+		return ""
 	}
 	return *p
 }

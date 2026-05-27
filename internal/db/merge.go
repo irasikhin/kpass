@@ -121,7 +121,7 @@ func (d *DB) entryPathExists(path string) bool {
 
 // importEntry mirrors Python import_entry: deep-clone the source into the
 // target tree at destinationPath.
-func (d *DB) importEntry(src *Entry, destinationPath string) *Entry {
+func (d *DB) importEntry(src *Entry, destinationPath string) {
 	parts := runtimex.SplitPath(destinationPath)
 	parent := d.EnsureGroup(runtimex.JoinPath(parts[:len(parts)-1]))
 	title := parts[len(parts)-1]
@@ -141,12 +141,6 @@ func (d *DB) importEntry(src *Entry, destinationPath string) *Entry {
 		}
 		newBin := d.Raw.AddBinary(data)
 		ref.Binaries[i] = newBin.CreateReference(br.Name)
-	}
-	return &Entry{
-		d:      d,
-		e:      ref,
-		parent: parent.g,
-		Path:   append(append([]string(nil), parent.Path...), title),
 	}
 }
 

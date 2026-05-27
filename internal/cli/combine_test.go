@@ -5,13 +5,13 @@ import (
 	"testing"
 )
 
-// addOtpEntry inserts a "OTP-only" entry under otp/<name> via the CLI so the
+// addOtpEntry inserts an "OTP-only" entry under otp/email via the CLI so the
 // scenario mirrors what import-pass / import-otp would produce.
-func (f *fixture) addOtpEntry(t *testing.T, path, otpURI string) {
+func (f *fixture) addOtpEntry(t *testing.T, otpURI string) {
 	t.Helper()
-	_, stderr, code := f.runCLI("insert", path, "--password", "x", "--otp", otpURI, "-f")
+	_, stderr, code := f.runCLI("insert", "otp/email", "--password", "x", "--otp", otpURI, "-f")
 	if code != 0 {
-		t.Fatalf("insert %s: code=%d stderr=%s", path, code, stderr)
+		t.Fatalf("insert otp/email: code=%d stderr=%s", code, stderr)
 	}
 }
 
@@ -20,7 +20,7 @@ func (f *fixture) addOtpEntry(t *testing.T, path, otpURI string) {
 func TestCombineAttachesOtpToExistingLogin(t *testing.T) {
 	f := newFixture(t)
 	// internet/email exists (seeded). Add a separate otp-only entry.
-	f.addOtpEntry(t, "otp/email", "otpauth://totp/X?secret=ABC&issuer=I")
+	f.addOtpEntry(t, "otpauth://totp/X?secret=ABC&issuer=I")
 
 	_, stderr, code := f.runCLI("combine", "otp/email", "internet/email", "-f")
 	if code != 0 {
@@ -46,7 +46,7 @@ func TestCombineAttachesOtpToExistingLogin(t *testing.T) {
 
 func TestCombineDeleteSrcRemovesSource(t *testing.T) {
 	f := newFixture(t)
-	f.addOtpEntry(t, "otp/email", "otpauth://totp/X?secret=ABC")
+	f.addOtpEntry(t, "otpauth://totp/X?secret=ABC")
 	_, _, code := f.runCLI("combine", "otp/email", "internet/email", "-f", "--delete-src")
 	if code != 0 {
 		t.Fatalf("code=%d", code)
@@ -166,7 +166,7 @@ func TestCombineAskDefaultIsKeep(t *testing.T) {
 
 func TestCombineOnlyRestrictsFields(t *testing.T) {
 	f := newFixture(t)
-	f.addOtpEntry(t, "otp/email", "otpauth://totp/X?secret=ABC")
+	f.addOtpEntry(t, "otpauth://totp/X?secret=ABC")
 	// src.password=x but dst should NOT get it because --only=otp.
 	_, _, code := f.runCLI("combine", "otp/email", "internet/email", "-f", "--only", "otp")
 	if code != 0 {
@@ -197,7 +197,7 @@ func TestCombineOnlyUnknownErrors(t *testing.T) {
 
 func TestCombineDryRunDoesNotMutate(t *testing.T) {
 	f := newFixture(t)
-	f.addOtpEntry(t, "otp/email", "otpauth://totp/X?secret=ABC")
+	f.addOtpEntry(t, "otpauth://totp/X?secret=ABC")
 	stdout, _, code := f.runCLI("combine", "otp/email", "internet/email", "--dry-run", "-f")
 	if code != 0 {
 		t.Fatalf("code=%d", code)
