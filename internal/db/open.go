@@ -40,7 +40,7 @@ func Open(cfg config.Config) (*DB, error) {
 		}
 		f, err := os.Open(dbPath)
 		if err != nil {
-			return nil, fmt.Errorf("failed to open KeePass database: %v", err)
+			return nil, fmt.Errorf("failed to open KeePass database: %w", err)
 		}
 		defer f.Close()
 		raw := gokeepasslib.NewDatabase()
@@ -73,7 +73,7 @@ func Open(cfg config.Config) (*DB, error) {
 	}
 	db, err := tryOpen(password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open KeePass database: %v", err)
+		return nil, fmt.Errorf("failed to open KeePass database: %w", err)
 	}
 	if password != "" && cache.Enabled(cfg) {
 		_ = cache.Store(dbPath, cfg.KeyFile, password, cfg.CacheTTL)

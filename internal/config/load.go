@@ -48,12 +48,12 @@ func Load(explicit string) (FileConfig, string, error) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return FileConfig{}, path, fmt.Errorf("failed to read KPass config %s: %v", path, err)
+		return FileConfig{}, path, fmt.Errorf("failed to read KPass config %s: %w", path, err)
 	}
 
 	var raw map[string]any
 	if _, err := toml.Decode(string(data), &raw); err != nil {
-		return FileConfig{}, path, fmt.Errorf("failed to parse KPass config %s: %v", path, err)
+		return FileConfig{}, path, fmt.Errorf("failed to parse KPass config %s: %w", path, err)
 	}
 
 	for k := range raw {

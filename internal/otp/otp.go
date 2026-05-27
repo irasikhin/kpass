@@ -89,7 +89,7 @@ func Generate(uri string, now time.Time) (string, error) {
 	}
 	key, err := base32.StdEncoding.DecodeString(normalized)
 	if err != nil {
-		return "", fmt.Errorf("invalid OTP secret: %v", err)
+		return "", fmt.Errorf("invalid OTP secret: %w", err)
 	}
 
 	if now.IsZero() {

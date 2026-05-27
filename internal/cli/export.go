@@ -256,7 +256,7 @@ type importEntry struct {
 func parseJSONImport(data []byte) ([]importEntry, error) {
 	var raw []map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("invalid JSON: %v", err)
+		return nil, fmt.Errorf("invalid JSON: %w", err)
 	}
 	var out []importEntry
 	for _, m := range raw {
@@ -287,7 +287,7 @@ func parseCSVImport(data []byte) ([]importEntry, error) {
 	r := csv.NewReader(strings.NewReader(string(data)))
 	records, err := r.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("invalid CSV: %v", err)
+		return nil, fmt.Errorf("invalid CSV: %w", err)
 	}
 	if len(records) < 2 {
 		return nil, fmt.Errorf("CSV must have a header row plus data")

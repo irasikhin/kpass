@@ -106,7 +106,7 @@ func decryptWithGPG(bin, path string) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("gpg decrypt failed for %s: %v", path, err)
+		return nil, fmt.Errorf("gpg decrypt failed for %s: %w", path, err)
 	}
 	return out, nil
 }
@@ -143,7 +143,7 @@ func walkPassStore(root string, dec PassDecryptor) ([]importEntry, error) {
 		relPath := filepath.ToSlash(strings.TrimSuffix(rel, ".gpg"))
 		plaintext, err := dec(p)
 		if err != nil {
-			return fmt.Errorf("%s: %v", relPath, err)
+			return fmt.Errorf("%s: %w", relPath, err)
 		}
 		entries = append(entries, parsePassEntry(relPath, plaintext))
 		return nil

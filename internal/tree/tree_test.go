@@ -5,50 +5,6 @@ import (
 	"testing"
 )
 
-func TestRender_Empty(t *testing.T) {
-	out := Render(nil, "Root")
-	if !strings.Contains(out, "Root") {
-		t.Errorf("Render empty: %q", out)
-	}
-}
-
-func TestRender_SingleEntry(t *testing.T) {
-	out := Render([]string{"email"}, "Store")
-	if !strings.Contains(out, "email") {
-		t.Errorf("missing email: %q", out)
-	}
-}
-
-func TestRender_Nested(t *testing.T) {
-	out := Render([]string{"work/email", "work/chat", "personal/bank"}, "Vault")
-	if !strings.Contains(out, "work") {
-		t.Error("missing work group")
-	}
-	if !strings.Contains(out, "email") {
-		t.Error("missing email entry")
-	}
-	if !strings.Contains(out, "personal") {
-		t.Error("missing personal group")
-	}
-	if !strings.Contains(out, "bank") {
-		t.Error("missing bank entry")
-	}
-}
-
-func TestRender_Sorted(t *testing.T) {
-	out := Render([]string{"zebra", "alpha", "beta"}, "Root")
-	// Should be sorted case-insensitively: alpha, beta, zebra
-	alphaIdx := strings.Index(out, "alpha")
-	betaIdx := strings.Index(out, "beta")
-	zebraIdx := strings.Index(out, "zebra")
-	if alphaIdx == -1 || betaIdx == -1 || zebraIdx == -1 {
-		t.Fatal("missing entries")
-	}
-	if alphaIdx > betaIdx || betaIdx > zebraIdx {
-		t.Errorf("not sorted: alpha=%d beta=%d zebra=%d", alphaIdx, betaIdx, zebraIdx)
-	}
-}
-
 func TestRenderRich_Indicators(t *testing.T) {
 	entries := []*EntryInfo{
 		{Path: "work/email", HasPassword: true, HasURL: true, HasOTP: true},

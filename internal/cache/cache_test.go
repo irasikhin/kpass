@@ -124,34 +124,6 @@ func TestLoad_Expired(t *testing.T) {
 	}
 }
 
-func TestClearAll(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("XDG_RUNTIME_DIR", dir)
-
-	db1 := filepath.Join(dir, "a.kdbx")
-	db2 := filepath.Join(dir, "b.kdbx")
-	if err := os.WriteFile(db1, []byte("a"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(db2, []byte("b"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := Store(db1, "", "pw1", 300); err != nil {
-		t.Fatal(err)
-	}
-	if err := Store(db2, "", "pw2", 300); err != nil {
-		t.Fatal(err)
-	}
-
-	n, err := ClearAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if n < 2 {
-		t.Errorf("ClearAll removed %d files, want >= 2", n)
-	}
-}
-
 func TestClear_Missing(t *testing.T) {
 	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
 	ok, err := Clear("/nonexistent/db.kdbx", "")

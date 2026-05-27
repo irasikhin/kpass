@@ -16,10 +16,11 @@ import (
 // path. Creates a timestamped backup before overwriting. After saving,
 // protected entries are re-unlocked so the caller can continue using the DB.
 func (d *DB) Save() error {
-	// Auto-backup before destructive write.
+	// Auto-backup before destructive write. Non-fatal: a save without a
+	// backup is still better than no save at all, but surface a warning
+	// to stderr so the user knows the safety net is missing on this write.
 	if _, err := d.Backup(); err != nil {
-		// Non-fatal: proceed with save even if backup fails.
-		_ = err
+		fmt.Fprintf(os.Stderr, "warning: backup failed before save (%v); proceeding anyway\n", err)
 	}
 
 	// Auto-prune old backups (non-fatal).

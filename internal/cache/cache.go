@@ -127,23 +127,3 @@ func Clear(database, keyFile string) (bool, error) {
 	}
 	return true, nil
 }
-
-// ClearAll removes every kpass cache file in $XDG_RUNTIME_DIR/kpass/.
-func ClearAll() (int, error) {
-	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
-	if runtimeDir == "" {
-		return 0, nil
-	}
-	dir := filepath.Join(runtimeDir, "kpass")
-	matches, err := filepath.Glob(filepath.Join(dir, "*.json"))
-	if err != nil || len(matches) == 0 {
-		return 0, nil //nolint:nilerr // glob failure → nothing to clear
-	}
-	removed := 0
-	for _, m := range matches {
-		if err := os.Remove(m); err == nil {
-			removed++
-		}
-	}
-	return removed, nil
-}

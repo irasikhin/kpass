@@ -93,38 +93,6 @@ func computeCounts(n *richNode) int {
 	return count
 }
 
-type simpleNode struct {
-	children map[string]*simpleNode
-}
-
-func newSimpleNode() *simpleNode { return &simpleNode{children: map[string]*simpleNode{}} }
-
-func buildSimple(paths []string) *simpleNode {
-	root := newSimpleNode()
-	for _, p := range paths {
-		cur := root
-		for _, part := range runtimex.SplitPath(p) {
-			child, ok := cur.children[part]
-			if !ok {
-				child = newSimpleNode()
-				cur.children[part] = child
-			}
-			cur = child
-		}
-	}
-	return root
-}
-
-// Render mirrors Python's render_tree. rootLabel is the first line; entries
-// in `paths` are split on "/" and rendered as a sorted box-drawing tree.
-func Render(paths []string, rootLabel string) string {
-	var b strings.Builder
-	b.WriteString(color.Bold(rootLabel))
-	root := buildSimple(paths)
-	walkSimple(&b, root, "", 0)
-	return b.String()
-}
-
 // RenderRich renders a tree with entry indicators and group counts.
 // depth=0 means unlimited.
 func RenderRich(entries []*EntryInfo, rootLabel string, depth int) string {
@@ -193,29 +161,6 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max-1] + "…"
-}
-
-func walkSimple(b *strings.Builder, n *simpleNode, prefix string, _ int) {
-	names := sortedChildNames(n.children)
-	for i, name := range names {
-		isLast := i == len(names)-1
-		connector := "├── "
-		nextPrefix := prefix + "│   "
-		if isLast {
-			connector = "└── "
-			nextPrefix = prefix + "    "
-		}
-		b.WriteByte('\n')
-		b.WriteString(color.Faint(prefix))
-		b.WriteString(color.Faint(connector))
-		child := n.children[name]
-		if len(child.children) == 0 {
-			b.WriteString(color.Bold(name))
-		} else {
-			b.WriteString(name)
-		}
-		walkSimple(b, child, nextPrefix, 0)
-	}
 }
 
 func walkRich(b *strings.Builder, n *richNode, prefix string, currentDepth int, maxDepth int) {

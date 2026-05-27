@@ -11,8 +11,9 @@ import (
 )
 
 // Create initializes a new empty KeePass KDBX v4 database at `path`
-// protected by `password`. If the file already exists, Create returns an error
-// (use --force to overwrite).
+// protected by `password`. If the file already exists, Create returns an
+// error and refuses to overwrite — callers that want overwrite semantics
+// (cli/init.go --force) must remove the file first.
 func Create(path, password, keyFile string) error {
 	expanded := runtimex.ExpandPath(path)
 	if expanded == "" {
