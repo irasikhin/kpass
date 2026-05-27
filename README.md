@@ -7,9 +7,9 @@
 Another CLI for [KeePass](https://keepass.info/), built vibe-coding style:
 human designs, AI drives.
 
-> ⚠️ **Alpha — pre-stable software.** CLI flags, config schema, on-disk
-> layout and the Go module API can change without notice until 1.0. Always
-> back up your `.kdbx` file before destructive operations.
+> ⚠️ **Pre-1.0.** CLI flags, config schema, on-disk layout and the Go
+> module API may change between minor versions until 1.0. Always back up
+> your `.kdbx` file before destructive operations.
 
 > Vibe-coded by Claude Opus 3.7, DeepSeek V4 Pro, and GPT 5.5.
 

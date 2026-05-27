@@ -12,13 +12,23 @@ commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## [0.2.0] — 2026-05-27
 
+First stable release. Promotes the `0.1.0-alpha` series; users coming
+from `v0.1.0-alpha.1` get every change recorded in the alpha sections
+below plus the items listed here.
+
 ### Added
 
-- auto-detect bump from conventional commits (a6e38a5)
+- Auto-detect bump from conventional commits in `scripts/release.sh`
+  (defaults to `auto`; `BREAKING CHANGE:`/`type!:` → major, `feat:` →
+  minor, otherwise patch). Refuses to bump from a prerelease tag —
+  pass an explicit `X.Y.Z` for transitions out of an alpha/beta/rc.
+  (a6e38a5)
 
 ### Fixed
 
-- anchor BREAKING CHANGE grep to start of line (745e650)
+- Release script's `BREAKING CHANGE:` detection is now anchored to the
+  start of a line, so prose mentions in commit bodies no longer
+  escalate the bump. (745e650)
 
 
 ## [0.1.0-alpha.3] — 2026-05-27
@@ -51,7 +61,7 @@ commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 - lowercase error strings and drop trailing punctuation (4f78453)
 
 
-## [0.1.0-alpha.2] — 2026-05-27
+## [0.1.0-alpha.2] — 2026-05-27 (tag only, no binary release)
 
 ### Added
 
@@ -130,8 +140,8 @@ until 1.0.
 - Non-interactive mode via global `--yes/-y` and `--json` on mutating
   commands.
 
-[Unreleased]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...HEAD
-[0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
-[0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
-[0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
+[Unreleased]: https://github.com/irasikhin/kpass/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.3...v0.2.0
+[0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.3
+[0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
+[0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1

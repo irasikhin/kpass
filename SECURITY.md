@@ -2,8 +2,9 @@
 
 ## Supported Versions
 
-kpass is pre-1.0 alpha software. Security fixes are provided for the latest
-release only.
+kpass is pre-1.0; the API, CLI flags, and on-disk layout may still change
+between minor versions. Security fixes are provided for the latest release
+only.
 
 ## Reporting a Vulnerability
 
@@ -21,9 +22,10 @@ Please include:
 ## Secret Handling Notes
 
 kpass intentionally exposes secrets for commands such as `get --all`,
-`get --field password`, `get --field otp`, `copy`, and `export`. Treat terminal
-history, shell history, process listings, clipboard managers, logs, and export
-files as sensitive when using those commands.
+`get --field password`, `get --field otp`, `copy --field password`,
+`copy --field otp`, and `export`. Treat terminal history, shell history,
+process listings, clipboard managers, logs, and export files as sensitive
+when using those commands.
 
 Prefer prompts or `--password-stdin` over inline `--password` in shared systems,
 because inline arguments may be recorded by shells or visible to local process
