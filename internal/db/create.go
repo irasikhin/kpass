@@ -20,7 +20,7 @@ func Create(path, password, keyFile string) error {
 		return fmt.Errorf("database path cannot be empty")
 	}
 
-	if _, err := os.Stat(expanded); err == nil {
+	if _, err := osStatFn(expanded); err == nil {
 		return fmt.Errorf("database already exists: %s (use --force to overwrite)", expanded)
 	}
 
@@ -51,13 +51,13 @@ func Create(path, password, keyFile string) error {
 	root := db.Content.Root.Groups[0]
 	root.Name = rootName
 
-	f, err := os.OpenFile(expanded, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
+	f, err := osOpenFileFn(expanded, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
 	if err != nil {
 		return fmt.Errorf("cannot create database file: %w", err)
 	}
 	defer f.Close()
 
-	if err := gokeepasslib.NewEncoder(f).Encode(db); err != nil {
+	if err := encodeFn(f, db); err != nil {
 		return fmt.Errorf("cannot write database: %w", err)
 	}
 

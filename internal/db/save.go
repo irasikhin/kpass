@@ -2,14 +2,11 @@ package db
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/tobischo/gokeepasslib/v3"
 )
 
 // Save re-locks protected entries and writes the database back to its source
@@ -28,15 +25,15 @@ func (d *DB) Save() error {
 		_ = d.pruneOldBackups()
 	}
 
-	if err := d.Raw.LockProtectedEntries(); err != nil {
+	if err := lockProtectedFn(d.Raw); err != nil {
 		return fmt.Errorf("failed to lock protected entries: %w", err)
 	}
-	tmp, err := os.CreateTemp(filepathDir(d.Path), ".kpass-save-*")
+	tmp, err := osCreateTempFn(filepathDir(d.Path), ".kpass-save-*")
 	if err != nil {
 		return err
 	}
 	tmpPath := tmp.Name()
-	if err := tmp.Chmod(0o600); err != nil {
+	if err := osChmodFileFn(tmp, 0o600); err != nil {
 		_ = tmp.Close()
 		return err
 	}
@@ -45,19 +42,19 @@ func (d *DB) Save() error {
 			_ = os.Remove(tmpPath)
 		}
 	}()
-	if err := gokeepasslib.NewEncoder(tmp).Encode(d.Raw); err != nil {
+	if err := encodeFn(tmp, d.Raw); err != nil {
 		_ = tmp.Close()
 		return err
 	}
 	if err := tmp.Close(); err != nil {
 		return err
 	}
-	if err := os.Rename(tmpPath, d.Path); err != nil {
+	if err := osRenameFn(tmpPath, d.Path); err != nil {
 		return err
 	}
 	tmpPath = ""
 	// Re-unlock so callers can keep operating on the in-memory DB.
-	return d.Raw.UnlockProtectedEntries()
+	return unlockProtectedFn(d.Raw)
 }
 
 // Backup creates a timestamped backup of the database file before a
@@ -68,7 +65,7 @@ func (d *DB) Backup() (string, error) {
 	base := strings.TrimSuffix(d.Path, ext)
 	backupPath := fmt.Sprintf("%s.%s.bak", base, ts)
 
-	src, err := os.Open(d.Path)
+	src, err := osOpenFn(d.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return "", nil // nothing to back up yet
@@ -77,13 +74,13 @@ func (d *DB) Backup() (string, error) {
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(backupPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
+	dst, err := osOpenFileFn(backupPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
 	if err != nil {
 		return "", err
 	}
 	defer dst.Close()
 
-	if _, err := io.Copy(dst, src); err != nil {
+	if _, err := ioCopyFn(dst, src); err != nil {
 		return "", err
 	}
 	return backupPath, nil
@@ -105,22 +102,22 @@ func (d *DB) ListBackups() ([]string, error) {
 
 // RestoreBackup copies the backup file over the current database.
 func RestoreBackup(backupPath, dbPath string) error {
-	src, err := os.Open(backupPath)
+	src, err := osOpenFn(backupPath)
 	if err != nil {
 		return fmt.Errorf("cannot open backup: %w", err)
 	}
 	defer src.Close()
 
-	dst, err := os.OpenFile(dbPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	dst, err := osOpenFileFn(dbPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("cannot write database: %w", err)
 	}
 	defer dst.Close()
-	if err := dst.Chmod(0o600); err != nil {
+	if err := osChmodFileFn(dst, 0o600); err != nil {
 		return fmt.Errorf("cannot set database permissions: %w", err)
 	}
 
-	if _, err := io.Copy(dst, src); err != nil {
+	if _, err := ioCopyFn(dst, src); err != nil {
 		return err
 	}
 	return nil

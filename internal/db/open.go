@@ -3,7 +3,6 @@ package db
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/tobischo/gokeepasslib/v3"
 
@@ -28,7 +27,7 @@ func Open(cfg config.Config) (*DB, error) {
 		return OpenHook(cfg)
 	}
 	dbPath := runtimex.ExpandPath(cfg.Database)
-	info, err := os.Stat(dbPath)
+	info, err := osStatFn(dbPath)
 	if err != nil || info.IsDir() {
 		return nil, fmt.Errorf("KeePass database not found: %s", dbPath)
 	}
@@ -38,7 +37,7 @@ func Open(cfg config.Config) (*DB, error) {
 		if err != nil {
 			return nil, err
 		}
-		f, err := os.Open(dbPath)
+		f, err := osOpenFn(dbPath)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open KeePass database: %w", err)
 		}
@@ -48,7 +47,7 @@ func Open(cfg config.Config) (*DB, error) {
 		if err := gokeepasslib.NewDecoder(f).Decode(raw); err != nil {
 			return nil, err
 		}
-		if err := raw.UnlockProtectedEntries(); err != nil {
+		if err := unlockProtectedFn(raw); err != nil {
 			return nil, err
 		}
 		return &DB{Path: dbPath, KeyFile: cfg.KeyFile, Raw: raw, BackupKeep: cfg.BackupKeep, BackupMaxAgeDays: cfg.BackupMaxAgeDays}, nil

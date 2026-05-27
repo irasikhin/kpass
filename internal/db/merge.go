@@ -232,7 +232,7 @@ func OpenSimple(dbPath, passwordFile, keyFile, inlinePassword string) (*DB, erro
 	if err := gokeepasslib.NewDecoder(f).Decode(raw); err != nil {
 		return nil, fmt.Errorf("failed to open KeePass database: %w", err)
 	}
-	if err := raw.UnlockProtectedEntries(); err != nil {
+	if err := unlockProtectedFn(raw); err != nil {
 		return nil, err
 	}
 	return &DB{Path: expanded, KeyFile: keyFile, Raw: raw}, nil
