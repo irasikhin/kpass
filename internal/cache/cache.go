@@ -12,6 +12,13 @@ import (
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
 
+// Seams for tests to drive error paths that the OS would otherwise never hit.
+var (
+	filepathAbsFn = filepath.Abs
+	jsonMarshalFn = json.Marshal
+	removeFn      = os.Remove
+)
+
 type entry struct {
 	ExpiresAt int64  `json:"expires_at"`
 	Password  string `json:"password"`
@@ -53,7 +60,7 @@ func Path(database, keyFile string) (string, error) {
 }
 
 func absResolve(p string) string {
-	abs, err := filepath.Abs(p)
+	abs, err := filepathAbsFn(p)
 	if err != nil {
 		return p
 	}
@@ -102,7 +109,7 @@ func Store(database, keyFile, password string, ttl int) error {
 	if err != nil || p == "" {
 		return err
 	}
-	data, err := json.Marshal(entry{ExpiresAt: time.Now().Unix() + int64(ttl), Password: password})
+	data, err := jsonMarshalFn(entry{ExpiresAt: time.Now().Unix() + int64(ttl), Password: password})
 	if err != nil {
 		return err
 	}
@@ -122,7 +129,7 @@ func Clear(database, keyFile string) (bool, error) {
 	if _, err := os.Stat(p); err != nil {
 		return false, nil //nolint:nilerr // no cache file = nothing to clear
 	}
-	if err := os.Remove(p); err != nil {
+	if err := removeFn(p); err != nil {
 		return false, err
 	}
 	return true, nil

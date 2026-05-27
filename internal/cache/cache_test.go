@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -317,6 +318,94 @@ func TestAbsResolve_FollowsSymlink(t *testing.T) {
 	}
 	if pReal != pLink {
 		t.Errorf("symlink and real path should hash to same cache key:\n  real=%q\n  link=%q", pReal, pLink)
+	}
+}
+
+func TestAbsResolve_AbsError(t *testing.T) {
+	orig := filepathAbsFn
+	filepathAbsFn = func(string) (string, error) { return "", errors.New("no cwd") }
+	t.Cleanup(func() { filepathAbsFn = orig })
+
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	// Path computes cache key using absResolve; the error branch must return p unchanged.
+	if _, err := Path("relative.kdbx", ""); err != nil {
+		t.Fatalf("Path should still succeed on Abs error, got %v", err)
+	}
+}
+
+func TestStore_MarshalError(t *testing.T) {
+	orig := jsonMarshalFn
+	jsonMarshalFn = func(any) ([]byte, error) { return nil, errors.New("marshal boom") }
+	t.Cleanup(func() { jsonMarshalFn = orig })
+
+	t.Setenv("XDG_RUNTIME_DIR", t.TempDir())
+	if err := Store("/tmp/db.kdbx", "", "pw", 30); err == nil || err.Error() != "marshal boom" {
+		t.Errorf("expected marshal error, got %v", err)
+	}
+}
+
+func TestStore_WriteFileError(t *testing.T) {
+	// Pre-create the cache path as a directory so WriteFile fails (cannot write to dir).
+	dir := t.TempDir()
+	t.Setenv("XDG_RUNTIME_DIR", dir)
+	dbPath := filepath.Join(dir, "db.kdbx")
+	if err := os.WriteFile(dbPath, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Path(dbPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(p, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := Store(dbPath, "", "pw", 30); err == nil {
+		t.Error("expected WriteFile error when cache path is a directory")
+	}
+}
+
+func TestLoad_ReadFileError(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_RUNTIME_DIR", dir)
+	dbPath := filepath.Join(dir, "db.kdbx")
+	if err := os.WriteFile(dbPath, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Path(dbPath, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("{}"), 0o000); err != nil {
+		t.Fatal(err)
+	}
+	// As non-root, mode 0000 makes ReadFile fail; treat as miss.
+	if os.Geteuid() == 0 {
+		t.Skip("running as root can read 0000 files")
+	}
+	pw, err := Load(dbPath, "")
+	if err != nil {
+		t.Fatalf("Load with unreadable cache: %v", err)
+	}
+	if pw != "" {
+		t.Errorf("password = %q, want empty (unreadable cache → miss)", pw)
+	}
+}
+
+func TestClear_RemoveError(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_RUNTIME_DIR", dir)
+	dbPath := filepath.Join(dir, "db.kdbx")
+	if err := os.WriteFile(dbPath, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := Store(dbPath, "", "pw", 30); err != nil {
+		t.Fatal(err)
+	}
+	orig := removeFn
+	removeFn = func(string) error { return errors.New("rm boom") }
+	t.Cleanup(func() { removeFn = orig })
+	if _, err := Clear(dbPath, ""); err == nil || err.Error() != "rm boom" {
+		t.Errorf("expected rm boom, got %v", err)
 	}
 }
 
