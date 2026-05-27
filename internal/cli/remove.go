@@ -27,53 +27,14 @@ func (cmd *RemoveCmd) Run(c *ctx) error {
 		return err
 	}
 
-	// Resolve all entries matching the patterns.
-	entries, err := expandEntries(c.db, cmd.Entry)
+	entries, err := cmd.resolveTargets(c)
 	if err != nil {
 		return err
 	}
 
-	// Apply tag filter.
-	if len(cmd.Tag) > 0 || len(cmd.TagAny) > 0 {
-		filtered := entries[:0]
-		for _, e := range entries {
-			if matchTagFilter(e, cmd.Tag, cmd.TagAny) {
-				filtered = append(filtered, e)
-			}
-		}
-		entries = filtered
-	}
-
-	if len(entries) == 0 {
-		return &UserError{Msg: "No matching entries found."}
-	}
-
 	if !cmd.Force {
-		// Show summary of all entries.
-		if len(entries) == 1 {
-			printEntryContext(c.out, entries[0])
-			ok, err := confirm(c, "Delete", entries[0].DisplayPath())
-			if err != nil {
-				return &UserError{Msg: err.Error()}
-			}
-			if !ok {
-				return &UserError{Msg: "Aborted."}
-			}
-		} else {
-			details := make([]string, len(entries))
-			for i, e := range entries {
-				details[i] = e.DisplayPath()
-				if u := e.Raw().GetContent("UserName"); u != "" {
-					details[i] += color.Faint(" (" + u + ")")
-				}
-			}
-			ok, err := confirm(c, fmt.Sprintf("Delete %d entries", len(entries)), details...)
-			if err != nil {
-				return &UserError{Msg: err.Error()}
-			}
-			if !ok {
-				return &UserError{Msg: "Aborted."}
-			}
+		if err := cmd.confirmDeletion(c, entries); err != nil {
+			return err
 		}
 	}
 
@@ -85,45 +46,111 @@ func (cmd *RemoveCmd) Run(c *ctx) error {
 		return nil
 	}
 
-	// Track parent groups to check for emptiness after deletion.
-	parentPaths := map[string]bool{}
-	for _, e := range entries {
-		if pp := e.ParentPath(); pp != "" {
-			parentPaths[pp] = true
-		}
-		if err := c.db.DeleteEntry(e); err != nil {
-			return &UserError{Msg: err.Error()}
-		}
+	parentPaths, err := cmd.deleteAll(c, entries)
+	if err != nil {
+		return err
 	}
 
-	// Check and offer to clean empty groups.
 	if !cmd.Force {
-		for pp := range parentPaths {
-			empty := true
-			for _, e := range c.db.SortedEntries() {
-				if e.ParentPath() == pp {
-					empty = false
-					break
-				}
-			}
-			if empty {
-				ok, err := confirm(c, "Remove empty group", pp)
-				if err != nil {
-					return &UserError{Msg: err.Error()}
-				}
-				if ok {
-					if err := c.db.RemoveGroup(pp); err != nil {
-						return &UserError{Msg: err.Error()}
-					}
-				}
-			}
+		if err := cmd.cleanEmptyGroups(c, parentPaths); err != nil {
+			return err
 		}
 	}
 
 	if err := c.db.Save(); err != nil {
 		return &UserError{Msg: err.Error()}
 	}
+	return cmd.report(c, entries)
+}
 
+func (cmd *RemoveCmd) resolveTargets(c *ctx) ([]*db.Entry, error) {
+	entries, err := expandEntries(c.db, cmd.Entry)
+	if err != nil {
+		return nil, err
+	}
+	if len(cmd.Tag) > 0 || len(cmd.TagAny) > 0 {
+		filtered := entries[:0]
+		for _, e := range entries {
+			if matchTagFilter(e, cmd.Tag, cmd.TagAny) {
+				filtered = append(filtered, e)
+			}
+		}
+		entries = filtered
+	}
+	if len(entries) == 0 {
+		return nil, &UserError{Msg: "No matching entries found."}
+	}
+	return entries, nil
+}
+
+func (cmd *RemoveCmd) confirmDeletion(c *ctx, entries []*db.Entry) error {
+	if len(entries) == 1 {
+		printEntryContext(c.out, entries[0])
+		ok, err := confirm(c, "Delete", entries[0].DisplayPath())
+		if err != nil {
+			return &UserError{Msg: err.Error()}
+		}
+		if !ok {
+			return &UserError{Msg: "Aborted."}
+		}
+		return nil
+	}
+	details := make([]string, len(entries))
+	for i, e := range entries {
+		details[i] = e.DisplayPath()
+		if u := e.Raw().GetContent("UserName"); u != "" {
+			details[i] += color.Faint(" (" + u + ")")
+		}
+	}
+	ok, err := confirm(c, fmt.Sprintf("Delete %d entries", len(entries)), details...)
+	if err != nil {
+		return &UserError{Msg: err.Error()}
+	}
+	if !ok {
+		return &UserError{Msg: "Aborted."}
+	}
+	return nil
+}
+
+func (cmd *RemoveCmd) deleteAll(c *ctx, entries []*db.Entry) (map[string]bool, error) {
+	parentPaths := map[string]bool{}
+	for _, e := range entries {
+		if pp := e.ParentPath(); pp != "" {
+			parentPaths[pp] = true
+		}
+		if err := c.db.DeleteEntry(e); err != nil {
+			return nil, &UserError{Msg: err.Error()}
+		}
+	}
+	return parentPaths, nil
+}
+
+func (cmd *RemoveCmd) cleanEmptyGroups(c *ctx, parentPaths map[string]bool) error {
+	for pp := range parentPaths {
+		empty := true
+		for _, e := range c.db.SortedEntries() {
+			if e.ParentPath() == pp {
+				empty = false
+				break
+			}
+		}
+		if !empty {
+			continue
+		}
+		ok, err := confirm(c, "Remove empty group", pp)
+		if err != nil {
+			return &UserError{Msg: err.Error()}
+		}
+		if ok {
+			if err := c.db.RemoveGroup(pp); err != nil {
+				return &UserError{Msg: err.Error()}
+			}
+		}
+	}
+	return nil
+}
+
+func (cmd *RemoveCmd) report(c *ctx, entries []*db.Entry) error {
 	if cmd.JSON {
 		paths := make([]string, len(entries))
 		for i, e := range entries {
@@ -137,7 +164,6 @@ func (cmd *RemoveCmd) Run(c *ctx) error {
 		fmt.Fprintln(c.out, string(data))
 		return nil
 	}
-
 	if len(entries) == 1 {
 		fmt.Fprintln(c.out, color.Green("Deleted 1 entry."))
 	} else {
@@ -176,7 +202,6 @@ func expandEntries(d *db.DB, patterns []string) ([]*db.Entry, error) {
 	var result []*db.Entry
 	allEntries := d.SortedEntries()
 	for _, pat := range patterns {
-		// Try exact match first.
 		matched := false
 		for _, e := range allEntries {
 			if e.DisplayPath() == pat {
@@ -187,7 +212,6 @@ func expandEntries(d *db.DB, patterns []string) ([]*db.Entry, error) {
 		if matched {
 			continue
 		}
-		// Try glob match.
 		globMatched := false
 		for _, e := range allEntries {
 			if ok, _ := filepath.Match(pat, e.DisplayPath()); ok {
@@ -196,7 +220,6 @@ func expandEntries(d *db.DB, patterns []string) ([]*db.Entry, error) {
 			}
 		}
 		if !globMatched {
-			// Fall back to ResolveEntry for partial matching.
 			e, err := d.ResolveEntry(pat)
 			if err != nil {
 				return nil, err
@@ -204,7 +227,6 @@ func expandEntries(d *db.DB, patterns []string) ([]*db.Entry, error) {
 			result = append(result, e)
 		}
 	}
-	// Deduplicate.
 	seen := map[string]bool{}
 	unique := result[:0]
 	for _, e := range result {
