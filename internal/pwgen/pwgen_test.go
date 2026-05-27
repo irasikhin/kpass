@@ -1,9 +1,39 @@
 package pwgen
 
 import (
+	"errors"
+	"io"
 	"strings"
 	"testing"
 )
+
+type failReader struct{}
+
+func (failReader) Read([]byte) (int, error) { return 0, errors.New("rand failure") }
+
+// flakyReader returns zero bytes for the first `ok` reads then errors.
+type flakyReader struct {
+	ok    int
+	calls int
+}
+
+func (f *flakyReader) Read(p []byte) (int, error) {
+	f.calls++
+	if f.calls > f.ok {
+		return 0, errors.New("rand exhausted")
+	}
+	for i := range p {
+		p[i] = 0
+	}
+	return len(p), nil
+}
+
+func withReader(t *testing.T, r io.Reader) {
+	t.Helper()
+	orig := randReader
+	randReader = r
+	t.Cleanup(func() { randReader = orig })
+}
 
 func containsAny(s, chars string) bool {
 	for _, r := range s {
@@ -116,31 +146,55 @@ func TestGenerate_Randomness(t *testing.T) {
 }
 
 func TestCharset_All(t *testing.T) {
-	s, err := Charset(true, true, true, true, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	s := Charset(true, true, true, true, "")
 	if !strings.Contains(s, lowerSet) || !strings.Contains(s, upperSet) || !strings.Contains(s, digitSet) || !strings.Contains(s, symbolSet) {
 		t.Error("charset missing expected groups")
 	}
 }
 
 func TestCharset_None(t *testing.T) {
-	s, err := Charset(false, false, false, false, "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	s := Charset(false, false, false, false, "")
 	if s != defaultSet {
 		t.Errorf("empty charset should return defaultSet, got %q", s)
 	}
 }
 
+func TestGenerate_RandError_RequiredGroup(t *testing.T) {
+	withReader(t, failReader{})
+	if _, err := Generate(8, true, true, true, true, ""); err == nil {
+		t.Error("expected rand error from required-group loop")
+	}
+}
+
+func TestGenerate_RandError_Fill(t *testing.T) {
+	// No required groups → goes straight to the fill loop's randomChar.
+	withReader(t, failReader{})
+	if _, err := Generate(8, false, false, false, false, ""); err == nil {
+		t.Error("expected rand error from fill loop")
+	}
+}
+
+func TestGenerate_RandError_Shuffle(t *testing.T) {
+	// Use a reader that succeeds for randomChar calls then fails for shuffle.
+	// randomChar uses rand.Int → reads bytes from reader; shuffle uses rand.Int too.
+	// Easiest: drive a reader that returns zeros for first N reads, then errors.
+	// 1 required + 3 fill = 4 randomChar calls; shuffle fires next → fail on 5th.
+	withReader(t, &flakyReader{ok: 4})
+	if _, err := Generate(4, true, false, false, false, ""); err == nil {
+		t.Error("expected rand error from shuffle loop")
+	}
+}
+
+func TestRandomChar_Error(t *testing.T) {
+	withReader(t, failReader{})
+	if _, err := randomChar("abc"); err == nil {
+		t.Error("expected randomChar error")
+	}
+}
+
 func TestCharset_CustomSymbols(t *testing.T) {
 	custom := "#$@"
-	s, err := Charset(false, false, false, true, custom)
-	if err != nil {
-		t.Fatal(err)
-	}
+	s := Charset(false, false, false, true, custom)
 	if s != custom {
 		t.Errorf("custom symbols: want %q, got %q", custom, s)
 	}

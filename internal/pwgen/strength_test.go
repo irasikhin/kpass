@@ -52,6 +52,30 @@ func TestAssess_Monotonic(t *testing.T) {
 	}
 }
 
+func TestAssess_NoClassifiableChars(t *testing.T) {
+	// Spaces fall into none of the upper/lower/digit/symbol checks → pool defaults to 26.
+	s := Assess("   ")
+	if s.Bits == 0 {
+		t.Error("expected non-zero bits even with non-classifiable chars")
+	}
+}
+
+func TestAssess_AllLabels(t *testing.T) {
+	cases := []struct{ pw, want string }{
+		{"a", "Very Weak"},                // ~4.7 bits
+		{"abcdef", "Weak"},                // 6 lowercase ≈ 28.2 bits
+		{"abcdefgh", "Fair"},              // 8 lowercase ≈ 37.6 bits
+		{"aB3$xY9!kL", "Strong"},          // 10 chars mixed ≈ 65 bits
+		{"aB3$xY9!kL2@mN5#", "Very Strong"}, // 16 chars mixed ≈ 105 bits
+	}
+	for _, c := range cases {
+		got := Assess(c.pw).Label
+		if got != c.want {
+			t.Errorf("Assess(%q).Label = %q, want %q", c.pw, got, c.want)
+		}
+	}
+}
+
 func TestAssess_Diversity(t *testing.T) {
 	// Same length, more diversity → higher bits
 	same := Assess("abcdefghijklmnop")

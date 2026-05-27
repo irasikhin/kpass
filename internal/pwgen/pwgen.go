@@ -3,8 +3,13 @@ package pwgen
 import (
 	"crypto/rand"
 	"fmt"
+	"io"
 	"math/big"
+	"strings"
 )
+
+// randReader is the source of randomness; tests replace it to drive error paths.
+var randReader io.Reader = rand.Reader
 
 const (
 	lowerSet   = "abcdefghijklmnopqrstuvwxyz"
@@ -17,7 +22,7 @@ const (
 // Charset assembles the charset matching the Python password_charset rules.
 // If customSymbols is non-empty, it replaces the default symbolSet when
 // symbols are enabled.
-func Charset(lower, upper, digits, symbols bool, customSymbols string) (string, error) {
+func Charset(lower, upper, digits, symbols bool, customSymbols string) string {
 	symSet := symbolSet
 	if customSymbols != "" {
 		symSet = customSymbols
@@ -36,16 +41,13 @@ func Charset(lower, upper, digits, symbols bool, customSymbols string) (string, 
 		groups = append(groups, symSet)
 	}
 	if len(groups) == 0 {
-		return defaultSet, nil
+		return defaultSet
 	}
-	out := ""
+	var b strings.Builder
 	for _, g := range groups {
-		out += g
+		b.WriteString(g)
 	}
-	if out == "" {
-		return "", fmt.Errorf("empty password charset")
-	}
-	return out, nil
+	return b.String()
 }
 
 // Generate mirrors Python generate_password.
@@ -55,10 +57,7 @@ func Generate(length int, lower, upper, digits, symbols bool, customSymbols stri
 	if length <= 0 {
 		return "", fmt.Errorf("password length must be positive")
 	}
-	charset, err := Charset(lower, upper, digits, symbols, customSymbols)
-	if err != nil {
-		return "", err
-	}
+	charset := Charset(lower, upper, digits, symbols, customSymbols)
 	symSet := symbolSet
 	if customSymbols != "" {
 		symSet = customSymbols
@@ -97,7 +96,7 @@ func Generate(length int, lower, upper, digits, symbols bool, customSymbols stri
 	}
 	// Shuffle (Fisher–Yates with crypto/rand).
 	for i := len(out) - 1; i > 0; i-- {
-		jBig, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		jBig, err := rand.Int(randReader, big.NewInt(int64(i+1)))
 		if err != nil {
 			return "", err
 		}
@@ -109,7 +108,7 @@ func Generate(length int, lower, upper, digits, symbols bool, customSymbols stri
 
 func randomChar(s string) (byte, error) {
 	n := big.NewInt(int64(len(s)))
-	idx, err := rand.Int(rand.Reader, n)
+	idx, err := rand.Int(randReader, n)
 	if err != nil {
 		return 0, err
 	}
