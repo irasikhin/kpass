@@ -66,7 +66,7 @@ detect_bump() {
       highest="patch"
     fi
   done < <(git log --no-merges "$range" --format='%s')
-  if git log --no-merges "$range" --format='%b' | grep -q 'BREAKING CHANGE:'; then
+  if git log --no-merges "$range" --format='%b' | grep -qE '^BREAKING CHANGE:'; then
     echo "major"; return
   fi
   echo "${highest:-patch}"
