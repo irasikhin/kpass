@@ -22,7 +22,6 @@ database = "~/keepass/work.kdbx"
 | Key                 | Type    | Required | Notes                                                                 |
 |---------------------|---------|----------|-----------------------------------------------------------------------|
 | `default`           | string  | yes      | Name of the profile to use when `@profile` is not given.              |
-| `default_database`  | string  | no       | Legacy alias for `default`. If both are set with different values, kpass errors out. |
 | `databases.<name>`  | table   | yes      | One block per database; at least one block is required.               |
 
 Unknown top-level keys are rejected at load time.
@@ -66,6 +65,9 @@ seconds so subsequent commands don't re-prompt.
 | `cache_ttl`    | int  | —                                                      | Legacy alias for `session_ttl`.                    |
 | `no_session`   | bool | `false`                                                | Disable the cache for this profile.                |
 | `no_cache`     | bool | —                                                      | Legacy alias for `no_session`.                     |
+
+> The legacy top-level `default_database` key was removed in `0.3.0`.
+> Rename it to `default`.
 
 ### Backups
 

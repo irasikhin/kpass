@@ -72,7 +72,7 @@ key_file = "~/vaults/personal.key"
 	}
 }
 
-func TestLoad_LegacyDefaultDatabase(t *testing.T) {
+func TestLoad_RejectsLegacyDefaultDatabaseKey(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.toml")
 	writeTOML(t, cfgPath, `
@@ -82,32 +82,9 @@ default_database = "main"
 database = "~/vaults/main.kdbx"
 `)
 
-	fc, _, err := Load(cfgPath)
-	if err != nil {
-		t.Fatalf("Load error: %v", err)
-	}
-	if fc.DefaultDatabase != "main" {
-		t.Errorf("default = %q, want main", fc.DefaultDatabase)
-	}
-}
-
-func TestLoad_DefaultDatabaseConflict(t *testing.T) {
-	dir := t.TempDir()
-	cfgPath := filepath.Join(dir, "config.toml")
-	writeTOML(t, cfgPath, `
-default = "main"
-default_database = "work"
-
-[databases.main]
-database = "~/vaults/main.kdbx"
-
-[databases.work]
-database = "~/vaults/work.kdbx"
-`)
-
 	_, _, err := Load(cfgPath)
 	if err == nil || !strings.Contains(err.Error(), "default_database") {
-		t.Errorf("expected default/default_database conflict, got: %v", err)
+		t.Errorf("expected unsupported-key error for default_database, got: %v", err)
 	}
 }
 
