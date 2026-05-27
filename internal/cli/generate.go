@@ -7,6 +7,7 @@ import (
 
 	"github.com/irasikhin/kpass/internal/color"
 	"github.com/irasikhin/kpass/internal/config"
+	"github.com/irasikhin/kpass/internal/db"
 	"github.com/irasikhin/kpass/internal/pwgen"
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
@@ -53,118 +54,150 @@ type GenerateCmd struct {
 	TagAny      []string `name:"tag-any" help:"Filter by tag (OR — at least one matches). Repeatable."`
 }
 
+// charset captures the four-class booleans + custom symbol chars used by
+// pwgen.Generate. Resolved once per Run from the user's flag mix.
+type charset struct {
+	lower, upper, digits, symbols bool
+	symbolChars                   string
+}
+
 func (cmd *GenerateCmd) Run(c *ctx) error {
-	// If no actionable arguments, show help.
 	if len(cmd.Entry) == 0 && !cmd.All {
 		return errHelpRequested
 	}
-
-	timeout := config.DefaultClipboardTimeout
-	if cmd.Timeout >= 0 {
-		timeout = cmd.Timeout
-	}
-
 	if err := c.openDatabase(); err != nil {
 		return err
 	}
 
-	// Determine target entries.
-	var targets []string
-	if cmd.All {
-		// Regenerate all existing entries (optionally filtered).
-		filter := ""
-		if len(cmd.Entry) > 0 {
-			filter = cmd.Entry[0]
-		}
-		for _, e := range c.db.SortedEntries() {
-			if filter != "" && !matchGlob(filter, e.DisplayPath()) {
-				continue
-			}
-			if !matchTagFilter(e, cmd.Tag, cmd.TagAny) {
-				continue
-			}
-			targets = append(targets, e.DisplayPath())
-		}
-		if len(targets) == 0 {
-			return &UserError{Msg: "No matching entries found."}
-		}
-		// Batch confirmation.
-		ok, err := confirm(c, fmt.Sprintf("Regenerate passwords for %d entries", len(targets)), targets...)
-		if err != nil {
-			return &UserError{Msg: err.Error()}
-		}
-		if !ok {
-			return &UserError{Msg: "Aborted."}
-		}
-	} else {
-		targets = cmd.Entry
+	targets, err := cmd.resolveTargets(c)
+	if err != nil {
+		return err
 	}
 
-	// Resolve character set: --no-* flags only apply when no --lower/--upper/--digits/--symbols are set.
-	lower, upper, digits, symbols := resolveCharsetFlags(cmd.Lower, cmd.Upper, cmd.Digits, cmd.Symbols,
-		cmd.NoLower, cmd.NoUpper, cmd.NoDigits, cmd.NoSymbols)
-
-	symbolChars := ""
-	if cmd.SymbolChars != nil {
-		symbolChars = *cmd.SymbolChars
-	}
-
+	cs := cmd.charset()
 	generated := 0
 	for _, target := range targets {
-		t := runtimex.NormalizePath(target)
-		if t == "" {
+		entry, password, err := cmd.applyGeneration(c, target, cs)
+		if err != nil {
+			return err
+		}
+		if entry == nil {
 			continue
 		}
-
-		entry := c.db.FindEntryByExactPath(t)
-		if entry == nil {
-			if cmd.All {
-				continue // skip non-existent in --all mode
-			}
-			parts := runtimex.SplitPath(t)
-			title := parts[len(parts)-1]
-			parent := c.db.EnsureGroup(runtimex.JoinPath(parts[:len(parts)-1]))
-			entry = c.db.CreateEntry(parent, title, "", "", "", "", "")
-			c.db.ApplyFields(entry, cmd.Username, cmd.URL, cmd.Notes, cmd.OTP, true)
-		} else if !cmd.Force && !cmd.All {
-			return &UserError{Msg: fmt.Sprintf("Entry already exists: %s. Use --force to replace its password.", t)}
-		} else if cmd.Force || cmd.All {
-			c.db.ApplyFields(entry, cmd.Username, cmd.URL, cmd.Notes, cmd.OTP, false)
+		if err := cmd.printEntryResult(c, entry, password, len(targets) == 1); err != nil {
+			return err
 		}
-
-		password, err := pwgen.Generate(cmd.Length, lower, upper, digits, symbols, symbolChars)
-		if err != nil {
-			return &UserError{Msg: err.Error()}
-		}
-		entry.SetField("password", password)
 		generated++
-
-		if cmd.Copy && len(targets) == 1 {
-			if err := clipboardWrite(password, timeout); err != nil {
-				return &UserError{Msg: err.Error()}
-			}
-			fmt.Fprintf(c.out, "%s %s %s\n",
-				color.Green("Generated new password for"),
-				color.Bold(entry.DisplayPath()),
-				color.Faint("and copied it to clipboard"))
-			fmt.Fprintln(c.out, color.Faint(passwordStrengthLine(password)))
-		} else {
-			if len(targets) == 1 {
-				fmt.Fprintln(c.out, entry.DisplayPath())
-				fmt.Fprintln(c.out, color.Faint(passwordStrengthLine(password)))
-			} else {
-				fmt.Fprintf(c.out, "  %s %s %s\n",
-					color.Green("✓"),
-					color.Bold(entry.DisplayPath()),
-					color.Faint(passwordStrengthLine(password)))
-			}
-		}
 	}
 
 	if err := c.db.Save(); err != nil {
 		return &UserError{Msg: err.Error()}
 	}
+	return cmd.reportFinal(c, generated, len(targets))
+}
 
+func (cmd *GenerateCmd) resolveTargets(c *ctx) ([]string, error) {
+	if !cmd.All {
+		return cmd.Entry, nil
+	}
+	filter := ""
+	if len(cmd.Entry) > 0 {
+		filter = cmd.Entry[0]
+	}
+	var targets []string
+	for _, e := range c.db.SortedEntries() {
+		if filter != "" && !matchGlob(filter, e.DisplayPath()) {
+			continue
+		}
+		if !matchTagFilter(e, cmd.Tag, cmd.TagAny) {
+			continue
+		}
+		targets = append(targets, e.DisplayPath())
+	}
+	if len(targets) == 0 {
+		return nil, &UserError{Msg: "No matching entries found."}
+	}
+	ok, err := confirm(c, fmt.Sprintf("Regenerate passwords for %d entries", len(targets)), targets...)
+	if err != nil {
+		return nil, &UserError{Msg: err.Error()}
+	}
+	if !ok {
+		return nil, &UserError{Msg: "Aborted."}
+	}
+	return targets, nil
+}
+
+func (cmd *GenerateCmd) charset() charset {
+	lower, upper, digits, symbols := resolveCharsetFlags(cmd.Lower, cmd.Upper, cmd.Digits, cmd.Symbols,
+		cmd.NoLower, cmd.NoUpper, cmd.NoDigits, cmd.NoSymbols)
+	symChars := ""
+	if cmd.SymbolChars != nil {
+		symChars = *cmd.SymbolChars
+	}
+	return charset{lower: lower, upper: upper, digits: digits, symbols: symbols, symbolChars: symChars}
+}
+
+// applyGeneration finds or creates the entry, generates a password, applies
+// it, and returns (entry, password). entry is nil when the target should be
+// skipped (e.g. --all over a non-existent path).
+func (cmd *GenerateCmd) applyGeneration(c *ctx, target string, cs charset) (*db.Entry, string, error) {
+	t := runtimex.NormalizePath(target)
+	if t == "" {
+		return nil, "", nil
+	}
+	entry := c.db.FindEntryByExactPath(t)
+	switch {
+	case entry == nil && cmd.All:
+		return nil, "", nil
+	case entry == nil:
+		parts := runtimex.SplitPath(t)
+		title := parts[len(parts)-1]
+		parent := c.db.EnsureGroup(runtimex.JoinPath(parts[:len(parts)-1]))
+		entry = c.db.CreateEntry(parent, title, "", "", "", "", "")
+		c.db.ApplyFields(entry, cmd.Username, cmd.URL, cmd.Notes, cmd.OTP, true)
+	case !cmd.Force && !cmd.All:
+		return nil, "", &UserError{Msg: fmt.Sprintf("Entry already exists: %s. Use --force to replace its password.", t)}
+	default:
+		c.db.ApplyFields(entry, cmd.Username, cmd.URL, cmd.Notes, cmd.OTP, false)
+	}
+
+	password, err := pwgen.Generate(cmd.Length, cs.lower, cs.upper, cs.digits, cs.symbols, cs.symbolChars)
+	if err != nil {
+		return nil, "", &UserError{Msg: err.Error()}
+	}
+	entry.SetField("password", password)
+	return entry, password, nil
+}
+
+func (cmd *GenerateCmd) printEntryResult(c *ctx, entry *db.Entry, password string, singleTarget bool) error {
+	if cmd.Copy && singleTarget {
+		timeout := config.DefaultClipboardTimeout
+		if cmd.Timeout >= 0 {
+			timeout = cmd.Timeout
+		}
+		if err := clipboardWrite(password, timeout); err != nil {
+			return &UserError{Msg: err.Error()}
+		}
+		fmt.Fprintf(c.out, "%s %s %s\n",
+			color.Green("Generated new password for"),
+			color.Bold(entry.DisplayPath()),
+			color.Faint("and copied it to clipboard"))
+		fmt.Fprintln(c.out, color.Faint(passwordStrengthLine(password)))
+		return nil
+	}
+	if singleTarget {
+		fmt.Fprintln(c.out, entry.DisplayPath())
+		fmt.Fprintln(c.out, color.Faint(passwordStrengthLine(password)))
+		return nil
+	}
+	fmt.Fprintf(c.out, "  %s %s %s\n",
+		color.Green("✓"),
+		color.Bold(entry.DisplayPath()),
+		color.Faint(passwordStrengthLine(password)))
+	return nil
+}
+
+func (cmd *GenerateCmd) reportFinal(c *ctx, generated, total int) error {
 	if cmd.JSON {
 		data, _ := json.Marshal(map[string]any{
 			"status":    "ok",
@@ -174,8 +207,7 @@ func (cmd *GenerateCmd) Run(c *ctx) error {
 		fmt.Fprintln(c.out, string(data))
 		return nil
 	}
-
-	if len(targets) > 1 {
+	if total > 1 {
 		fmt.Fprintf(c.out, "\n%s\n", color.Green(fmt.Sprintf("Generated %d passwords.", generated)))
 	}
 	return nil
@@ -187,10 +219,8 @@ func (cmd *GenerateCmd) Run(c *ctx) error {
 // all classes and remove any that are excluded via --no-* flags.
 func resolveCharsetFlags(lower, upper, digits, symbols bool, noLower, noUpper, noDigits, noSymbols bool) (bool, bool, bool, bool) {
 	if lower || upper || digits || symbols {
-		// Opt-in mode: use only what was explicitly requested.
 		return lower, upper, digits, symbols
 	}
-	// Opt-out mode: start with all, remove excluded.
 	return !noLower, !noUpper, !noDigits, !noSymbols
 }
 
