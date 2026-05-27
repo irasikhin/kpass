@@ -5,53 +5,37 @@ import (
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
 
-// passwordOpts is the parsed form of the inline / stdin / generate password
-// flags. Constructed by passwordFlags.asOpts on each command struct and used
-// by selectPassword to decide where to source the password from.
-type passwordOpts struct {
-	provided      *string
-	passwordStdin bool
-	generate      bool
-	length        int
-	lower         bool
-	upper         bool
-	digits        bool
-	symbols       bool
-	noLower       bool
-	noUpper       bool
-	noDigits      bool
-	noSymbols     bool
-	symbolChars   *string
-}
-
-func (o passwordOpts) selectPassword(c *ctx, prompt string, confirm bool) (string, error) {
+// selectPassword resolves the inline / stdin / generate / prompt branches in
+// the order: explicit > stdin > generate > interactive prompt. Errors when
+// more than one explicit source is set.
+func (f passwordFlags) selectPassword(c *ctx, prompt string, confirm bool) (string, error) {
 	provided := 0
-	if o.provided != nil {
+	if f.Password != nil {
 		provided++
 	}
-	if o.passwordStdin {
+	if f.PasswordStdin {
 		provided++
 	}
-	if o.generate {
+	if f.Generate {
 		provided++
 	}
 	if provided > 1 {
 		return "", &UserError{Msg: "Choose only one of --password, --password-stdin, or --generate."}
 	}
-	if o.provided != nil {
-		return *o.provided, nil
+	if f.Password != nil {
+		return *f.Password, nil
 	}
-	if o.passwordStdin {
+	if f.PasswordStdin {
 		return runtimex.ReadSecretFromStdin(c.in)
 	}
-	if o.generate {
-		lower, upper, digits, symbols := resolveCharsetFlags(o.lower, o.upper, o.digits, o.symbols,
-			o.noLower, o.noUpper, o.noDigits, o.noSymbols)
+	if f.Generate {
+		lower, upper, digits, symbols := resolveCharsetFlags(f.Lower, f.Upper, f.Digits, f.Symbols,
+			f.NoLower, f.NoUpper, f.NoDigits, f.NoSymbols)
 		symChars := ""
-		if o.symbolChars != nil {
-			symChars = *o.symbolChars
+		if f.SymbolChars != nil {
+			symChars = *f.SymbolChars
 		}
-		return pwgen.Generate(o.length, lower, upper, digits, symbols, symChars)
+		return pwgen.Generate(f.Length, lower, upper, digits, symbols, symChars)
 	}
 	return runtimex.PromptSecret(prompt, confirm)
 }

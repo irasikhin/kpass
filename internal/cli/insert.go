@@ -27,25 +27,6 @@ type passwordFlags struct {
 	SymbolChars   *string `help:"Custom set of symbol characters to use instead of the default (!@#$%^&*()-_=+[]{}:,.?)." placeholder:"CHARS"`
 }
 
-// asOpts adapts to the existing passwordOpts type used by selectPassword.
-func (f passwordFlags) asOpts() passwordOpts {
-	return passwordOpts{
-		provided:      f.Password,
-		passwordStdin: f.PasswordStdin,
-		generate:      f.Generate,
-		length:        f.Length,
-		lower:         f.Lower,
-		upper:         f.Upper,
-		digits:        f.Digits,
-		symbols:       f.Symbols,
-		noLower:       f.NoLower,
-		noUpper:       f.NoUpper,
-		noDigits:      f.NoDigits,
-		noSymbols:     f.NoSymbols,
-		symbolChars:   f.SymbolChars,
-	}
-}
-
 // touched reports whether any password-related flag was set.
 func (f passwordFlags) touched() bool {
 	return f.Password != nil || f.PasswordStdin || f.Generate
@@ -82,7 +63,7 @@ func (cmd *InsertCmd) Run(c *ctx) error {
 		return &UserError{Msg: fmt.Sprintf("Entry already exists: %s", target)}
 	}
 
-	password, err := cmd.Password.asOpts().selectPassword(c, "Entry password: ", true)
+	password, err := cmd.Password.selectPassword(c, "Entry password: ", true)
 	if err != nil {
 		return wrapForUser(err)
 	}

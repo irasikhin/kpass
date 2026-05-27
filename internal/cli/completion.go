@@ -224,7 +224,7 @@ _kpass() {
         local global_flags="--config --database --password-file --key-file --cache-ttl --session-ttl --no-cache --no-session --no-color --help --version"
         case "$cmd" in
             ls)       COMPREPLY=($(compgen -W "$global_flags --flat --groups --long -l --depth --tag --tag-any --json" -- "$cur")) ;;
-            search|s) COMPREPLY=($(compgen -W "$global_flags --field -F --flat --ignore-case -i --tag --tag-any --json" -- "$cur")) ;;
+            search|s) COMPREPLY=($(compgen -W "$global_flags --field -F --format -o --ignore-case -i --tag --tag-any --json" -- "$cur")) ;;
             get|g)    COMPREPLY=($(compgen -W "$global_flags --field -F" -- "$cur")) ;;
             copy|c)   COMPREPLY=($(compgen -W "$global_flags --field -F" -- "$cur")) ;;
             pick)     COMPREPLY=($(compgen -W "$global_flags --action --field -F --timeout --preview --tag --tag-any" -- "$cur")) ;;
@@ -475,7 +475,7 @@ _kpass() {
                 search)
                     _arguments \
                         '*-F[Field to search]:field:_kpass_fields' \
-                        '--flat[Print plain paths]' \
+                        '(-o --format)'{-o,--format}'[Output format]:format:(tree flat verbose)' \
                         '(-i --ignore-case)'{-i,--ignore-case}'[Case-insensitive]' \
                         '*--tag[Filter by tag (AND)]:tag:_kpass_tags' \
                         '*--tag-any[Filter by tag (OR)]:tag:_kpass_tags' \

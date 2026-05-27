@@ -143,7 +143,7 @@ func TestSearchLists(t *testing.T) {
 
 func TestSearchCaseInsensitive(t *testing.T) {
 	f := newFixture(t)
-	stdout, _, code := f.runCLI("search", "MAIL", "--flat")
+	stdout, _, code := f.runCLI("search", "MAIL", "-o", "flat")
 	if code != 0 {
 		t.Fatalf("code=%d", code)
 	}
@@ -156,7 +156,7 @@ func TestSearchCaseInsensitive(t *testing.T) {
 
 func TestSearchCanSearchContents(t *testing.T) {
 	f := newFixture(t)
-	stdout, _, code := f.runCLI("search", "personal", "--flat", "--field", "notes")
+	stdout, _, code := f.runCLI("search", "personal", "-o", "flat", "--field", "notes")
 	if code != 0 {
 		t.Fatalf("code=%d", code)
 	}
@@ -165,7 +165,7 @@ func TestSearchCanSearchContents(t *testing.T) {
 		t.Fatalf("got=%v", got)
 	}
 
-	stdout, _, code = f.runCLI("search", "PW-WORK", "--flat", "--field", "password")
+	stdout, _, code = f.runCLI("search", "PW-WORK", "-o", "flat", "--field", "password")
 	if code != 0 {
 		t.Fatalf("code=%d", code)
 	}

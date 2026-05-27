@@ -116,7 +116,7 @@ func (cmd *EditCmd) Run(c *ctx) error {
 			changed = true
 		}
 		if cmd.Password.touched() {
-			newPw, err := cmd.Password.asOpts().selectPassword(c, "New password: ", true)
+			newPw, err := cmd.Password.selectPassword(c, "New password: ", true)
 			if err != nil {
 				return wrapForUser(err)
 			}

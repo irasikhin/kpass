@@ -14,8 +14,6 @@ import (
 type SearchCmd struct {
 	Term       string   `arg:"" help:"Term to match."`
 	Field      []string `short:"F" help:"Field to search (path|title|username|password|url|notes|otp or custom field). Repeatable. Default: path,title."`
-	Flat       bool     `help:"Print plain entry paths instead of a tree."`
-	Verbose    bool     `short:"v" help:"Show matching fields and their values for each result."`
 	ShowField  bool     `help:"Show which fields matched for each result."`
 	Format     string   `short:"o" default:"tree" enum:"tree,flat,verbose" help:"Output format: tree (default), flat, or verbose."`
 	IgnoreCase bool     `short:"i" help:"Case-insensitive match (default)." default:"true"`
@@ -37,14 +35,6 @@ func (cmd *SearchCmd) Run(c *ctx) error {
 	needle := cmd.Term
 	if cmd.IgnoreCase {
 		needle = strings.ToLower(cmd.Term)
-	}
-
-	// Backward compat: --verbose sets format=verbose, --flat sets format=flat.
-	if cmd.Verbose {
-		cmd.Format = "verbose"
-	}
-	if cmd.Flat {
-		cmd.Format = "flat"
 	}
 
 	type match struct {
