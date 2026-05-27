@@ -1,9 +1,8 @@
 // Package cli implements the kpass command-line interface. Argument parsing
 // and help rendering are delegated to alecthomas/kong; this file orchestrates:
 //
-//  1. Hidden child-process branch for clipboard clearing.
-//  2. Loading the TOML file config so `--config` is honored before commands run.
-//  3. Kong parse + dispatch, with `@profile` selectors captured via Passthrough
+//  1. Loading the TOML file config so `--config` is honored before commands run.
+//  2. Kong parse + dispatch, with `@profile` selectors captured via Passthrough
 //     and errors reshaped into our UserError stderr format.
 package cli
 
@@ -286,9 +285,26 @@ func reshapeKongError(err error) string {
 			arg = rest[:i]
 		}
 		arg = strings.Trim(arg, "\"' ")
+		if hint := removedCommandHint(arg); hint != "" {
+			return hint + "\nUse 'kpass --help' for usage."
+		}
 		return fmt.Sprintf("kpass: argument command: invalid choice: '%s'\nUse 'kpass --help' for usage.", arg)
 	}
 	return "kpass: " + msg + "\nUse 'kpass --help' for usage."
+}
+
+func removedCommandHint(command string) string {
+	hints := map[string]string{
+		"show":  "show was removed; use: kpass get [@db] <entry> [--field ...]",
+		"pass":  "pass was removed; use: kpass get [@db] <entry> --field password",
+		"clip":  "clip was removed; use: kpass copy [@db] <entry> [--field ...]",
+		"otp":   "otp was removed; use: kpass get [@db] <entry> --field otp or kpass copy [@db] <entry> --field otp",
+		"grep":  "grep was removed; use: kpass search [@db] <term> [--field ...]",
+		"close": "close was removed; session handling is automatic.",
+		"cp":    "cp was removed; use: kpass duplicate [@db] <source> <destination> or kpass copy [@db] <entry>",
+		"clone": "clone was removed; use: kpass duplicate [@db] <source> <destination>",
+	}
+	return hints[command]
 }
 
 // topCommand collapses a kong command path like "attach ls" into the top-level

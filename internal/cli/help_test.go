@@ -91,28 +91,51 @@ func TestShortAliasesRemoved(t *testing.T) {
 
 func TestCloneCommandRemoved(t *testing.T) {
 	// `clone` was renamed to `duplicate` in v0.4.0 (still accepted as an
-	// alias there) and removed entirely in v0.5.0. Users land in the
-	// unknown-command path.
+	// alias there) and removed entirely in v0.5.0. Users now get a migration
+	// hint, but the command is not accepted.
 	f := newFixture(t)
 	_, stderr, code := f.runCLI("clone", "internet/email", "x/y")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d, stderr=%q", code, stderr)
 	}
-	if !strings.Contains(stderr, "invalid choice: 'clone'") {
+	if !strings.Contains(stderr, "clone was removed; use: kpass duplicate") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 }
 
 func TestCpAliasRemoved(t *testing.T) {
 	// `cp` was confusing (copy vs clone semantics); it was removed in v0.4.0.
-	// The unknown-command path should suggest the closest live name.
+	// The unknown-command path should explain both possible replacements.
 	f := newFixture(t)
 	_, stderr, code := f.runCLI("cp", "internet/email", "x/y")
 	if code != 1 {
 		t.Fatalf("expected exit 1, got %d, stderr=%q", code, stderr)
 	}
-	if !strings.Contains(stderr, "invalid choice: 'cp'") {
+	if !strings.Contains(stderr, "cp was removed; use: kpass duplicate") {
 		t.Fatalf("stderr=%q", stderr)
+	}
+}
+
+func TestRemovedCommandsPrintMigrationHints(t *testing.T) {
+	f := newFixture(t)
+	cases := map[string]string{
+		"show":  "show was removed; use: kpass get",
+		"pass":  "pass was removed; use: kpass get",
+		"clip":  "clip was removed; use: kpass copy",
+		"otp":   "otp was removed; use: kpass get",
+		"grep":  "grep was removed; use: kpass search",
+		"close": "close was removed; session handling is automatic",
+	}
+	for command, want := range cases {
+		t.Run(command, func(t *testing.T) {
+			_, stderr, code := f.runCLI(command)
+			if code != 1 {
+				t.Fatalf("expected exit 1, got %d, stderr=%q", code, stderr)
+			}
+			if !strings.Contains(stderr, want) {
+				t.Fatalf("stderr missing %q: %q", want, stderr)
+			}
+		})
 	}
 }
 
