@@ -8,6 +8,25 @@ All notable changes to this project are documented here. Format based on
 [Conventional Commits](https://www.conventionalcommits.org/) — please write
 commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+## [0.3.1] — 2026-05-27
+
+### Tests
+
+- cover Load/Store/Clear/Path edge cases (bf758bf)
+- cover write.go and resolution edge cases (bf2707d)
+- cover PromptSecret and stdin reader (6f983f5)
+- cover Edit and EditorArgv (f0e96ae)
+- add seams and cover all backends (4f464af)
+- add seams and cover Pick fully (60519a1)
+- build seed helper and cover all 11 files (09c009b)
+- cover main via exit seam (9eec7c2)
+- cover ~30 untested commands (b8aae51)
+
+### CI
+
+- surface coverage on every CI run, add badge (014121f)
+
+
 ## [0.3.0] — 2026-05-27
 
 ### Breaking
@@ -191,3 +210,4 @@ until 1.0.
 [0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
 [0.2.1]: https://github.com/irasikhin/kpass/compare/v0.2.0...v0.2.1
 [0.3.0]: https://github.com/irasikhin/kpass/compare/v0.2.1...v0.3.0
+[0.3.1]: https://github.com/irasikhin/kpass/compare/v0.3.0...v0.3.1
