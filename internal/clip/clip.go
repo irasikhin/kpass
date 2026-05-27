@@ -19,6 +19,7 @@ var (
 	outputFn     = func(c *exec.Cmd) ([]byte, error) { return c.Output() }
 	executableFn = os.Executable
 	startFn      = func(c *exec.Cmd) error { return c.Start() }
+	backendFn    = Backend
 )
 
 // Backend reports which clipboard tool is available, or an error with
@@ -50,7 +51,7 @@ func look(name string) bool {
 }
 
 func Write(value string) error {
-	b, err := Backend()
+	b, err := backendFn()
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func Write(value string) error {
 }
 
 func Read() (string, error) {
-	b, err := Backend()
+	b, err := backendFn()
 	if err != nil {
 		return "", err
 	}
@@ -100,7 +101,7 @@ func Read() (string, error) {
 }
 
 func Clear() error {
-	b, err := Backend()
+	b, err := backendFn()
 	if err != nil {
 		return err
 	}

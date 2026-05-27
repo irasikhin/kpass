@@ -3,6 +3,7 @@ package clip
 import (
 	"errors"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -17,6 +18,7 @@ func resetClip(t *testing.T) {
 	origOutput := outputFn
 	origExec := executableFn
 	origStart := startFn
+	origBackend := backendFn
 	t.Cleanup(func() {
 		getenvFn = origGetenv
 		lookPathFn = origLook
@@ -24,6 +26,7 @@ func resetClip(t *testing.T) {
 		outputFn = origOutput
 		executableFn = origExec
 		startFn = origStart
+		backendFn = origBackend
 	})
 }
 
@@ -377,6 +380,83 @@ func TestWriteWithAutoClear_ExecutableError(t *testing.T) {
 	}
 	if called {
 		t.Error("must not Start when executableFn fails")
+	}
+}
+
+func TestWrite_UnsupportedBackend(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "weird", nil }
+	if err := Write("x"); err == nil || !strings.Contains(err.Error(), "unsupported backend") {
+		t.Errorf("Write unsupported = %v", err)
+	}
+}
+
+func TestRead_UnsupportedBackend(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "weird", nil }
+	if _, err := Read(); err == nil || !strings.Contains(err.Error(), "unsupported backend") {
+		t.Errorf("Read unsupported = %v", err)
+	}
+}
+
+func TestClear_UnsupportedBackend(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "weird", nil }
+	if err := Clear(); err == nil || !strings.Contains(err.Error(), "unsupported backend") {
+		t.Errorf("Clear unsupported = %v", err)
+	}
+}
+
+// Exercise the default runFn lambda body via a deterministic failure path.
+func TestDefaultRunFn_BodyExecutes(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "xclip", nil }
+	// runFn NOT overridden — default c.Run() runs and fails because the binary is absent.
+	if err := Write("x"); err == nil {
+		t.Error("expected exec error from non-existent xclip")
+	}
+}
+
+func TestDefaultOutputFn_BodyExecutes(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "xclip", nil }
+	if _, err := Read(); err == nil {
+		t.Error("expected exec error from non-existent xclip via default outputFn")
+	}
+}
+
+func TestDefaultStartFn_BodyExecutes(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "xclip", nil }
+	runFn = func(*exec.Cmd) error { return nil } // make Write succeed
+	executableFn = func() (string, error) { return "/no/such/binary/please", nil }
+	// startFn NOT overridden — default c.Start() runs and fails.
+	if err := WriteWithAutoClear("x", 5); err != nil {
+		t.Errorf("WriteWithAutoClear should swallow start error, got %v", err)
+	}
+}
+
+func TestWriteWithAutoClear_ProcessRelease(t *testing.T) {
+	resetClip(t)
+	backendFn = func() (string, error) { return "xclip", nil }
+	runFn = func(*exec.Cmd) error { return nil }
+	executableFn = func() (string, error) { return "/whatever", nil }
+	released := false
+	startFn = func(c *exec.Cmd) error {
+		// Attach the current process so cmd.Process.Release() is a safe no-op.
+		proc, err := os.FindProcess(os.Getpid())
+		if err != nil {
+			return err
+		}
+		c.Process = proc
+		released = true
+		return nil
+	}
+	if err := WriteWithAutoClear("x", 5); err != nil {
+		t.Fatal(err)
+	}
+	if !released {
+		t.Error("startFn should have been invoked")
 	}
 }
 
