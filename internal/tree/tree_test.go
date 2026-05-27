@@ -101,3 +101,29 @@ func TestEntryInfo_Indicators_Empty(t *testing.T) {
 		t.Errorf("empty indicators = %q", e.Indicators())
 	}
 }
+
+func TestEntryInfo_Indicators_Suffix(t *testing.T) {
+	e := &EntryInfo{Suffix: "(stale)"}
+	got := e.Indicators()
+	if !strings.Contains(got, "(stale)") {
+		t.Errorf("suffix missing in %q", got)
+	}
+}
+
+func TestRenderLong_MinColumnDefaults(t *testing.T) {
+	// Short fields → min widths kick in; no OTP/attach exercises the "—" placeholders.
+	entries := []*EntryInfo{{Path: "a", Username: "u", URL: "x"}}
+	out := RenderLong(entries)
+	if !strings.Contains(out, "  —") {
+		t.Errorf("expected dash placeholder for missing TOTP/attach in %q", out)
+	}
+}
+
+func TestTruncate(t *testing.T) {
+	if got := truncate("abc", 5); got != "abc" {
+		t.Errorf("truncate short = %q", got)
+	}
+	if got := truncate("abcdef", 4); got != "abc…" {
+		t.Errorf("truncate long = %q", got)
+	}
+}
