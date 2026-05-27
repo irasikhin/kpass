@@ -8,6 +8,12 @@ import (
 	"github.com/irasikhin/kpass/internal/color"
 )
 
+// OpenStartHook lets tests intercept the URL launch without spawning xdg-open.
+var OpenStartHook func(argv []string) error
+
+// openLookPathFn is the test seam for exec.LookPath used by openCommand.
+var openLookPathFn = exec.LookPath
+
 // OpenCmd opens an entry's URL in the system browser.
 type OpenCmd struct {
 	Entry string `arg:"" help:"Entry path or partial path."`
@@ -29,6 +35,12 @@ func (cmd *OpenCmd) Run(c *ctx) error {
 
 	argv := append(openCommand(), url)
 	fmt.Fprintf(c.out, "%s %s\n", color.Faint("Opening"), color.Bold(url))
+	if OpenStartHook != nil {
+		if err := OpenStartHook(argv); err != nil {
+			return &UserError{Msg: fmt.Sprintf("Failed to open URL: %v", err)}
+		}
+		return nil
+	}
 	if err := exec.Command(argv[0], argv[1:]...).Start(); err != nil {
 		return &UserError{Msg: fmt.Sprintf("Failed to open URL: %v", err)}
 	}
@@ -48,7 +60,7 @@ func openCommand() []string {
 		return []string{"cmd", "/c", "start", ""}
 	default:
 		// Linux, BSD, etc. — prefer xdg-open.
-		if path, err := exec.LookPath("xdg-open"); err == nil {
+		if path, err := openLookPathFn("xdg-open"); err == nil {
 			return []string{path}
 		}
 		return []string{"xdg-open"} // fallback; exec will fail with a clear error
