@@ -237,7 +237,7 @@ func TestUnknownDatabaseSelector(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("code=%d", code)
 	}
-	if !strings.Contains(stderr, "Unknown database profile: missing") {
+	if !strings.Contains(stderr, "unknown database profile: missing") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 }
@@ -252,7 +252,7 @@ func TestSelectorConflictsWithDatabaseFlag(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("code=%d", code)
 	}
-	if !strings.Contains(stderr, "cannot combine @db with --database.") {
+	if !strings.Contains(stderr, "cannot combine @db with --database") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 }
@@ -268,7 +268,7 @@ func TestConfigRequiresDefault(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("code=%d", code)
 	}
-	if !strings.Contains(stderr, "KPass config must define a non-empty top-level 'default'") {
+	if !strings.Contains(stderr, "kpass config must define a non-empty top-level 'default'") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 }
@@ -284,7 +284,7 @@ func TestPasswordLookupCycle(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("code=%d", code)
 	}
-	if !strings.Contains(stderr, "Database password resolution loop detected") {
+	if !strings.Contains(stderr, "database password resolution loop detected") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 }
@@ -357,7 +357,7 @@ func TestDoctorReportsBrokenCycle(t *testing.T) {
 	if !strings.Contains(stdout, "ERROR main:") {
 		t.Fatalf("stdout=%q", stdout)
 	}
-	if !strings.Contains(stdout, "Database password resolution loop detected") {
+	if !strings.Contains(stdout, "database password resolution loop detected") {
 		t.Fatalf("stdout=%q", stdout)
 	}
 }

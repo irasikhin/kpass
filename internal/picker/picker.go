@@ -26,7 +26,7 @@ func Pick(lines []string, query string, opts PickOpts) (string, error) {
 		return Hook(lines, query)
 	}
 	if len(lines) == 0 {
-		return "", errors.New("no entries found.")
+		return "", errors.New("no entries found")
 	}
 
 	binary, err := exec.LookPath("fzf")
@@ -68,7 +68,7 @@ func Pick(lines []string, query string, opts PickOpts) (string, error) {
 	}
 	selected := strings.TrimSpace(out.String())
 	if selected == "" {
-		return "", errors.New("no entry selected.")
+		return "", errors.New("no entry selected")
 	}
 	return selected, nil
 }

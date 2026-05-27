@@ -24,13 +24,13 @@ func resolveProfile(fc FileConfig, name string, fetcher PasswordFetcher, log io.
 	for _, n := range resolving {
 		if n == name {
 			loop := strings.Join(append(append([]string{}, resolving...), name), " -> ")
-			return Config{}, fmt.Errorf("Database password resolution loop detected: %s", loop)
+			return Config{}, fmt.Errorf("database password resolution loop detected: %s", loop)
 		}
 	}
 
 	profile, ok := fc.Databases[name]
 	if !ok {
-		return Config{}, fmt.Errorf("Unknown database profile: %s", name)
+		return Config{}, fmt.Errorf("unknown database profile: %s", name)
 	}
 
 	var password string
@@ -43,14 +43,14 @@ func resolveProfile(fc FileConfig, name string, fetcher PasswordFetcher, log io.
 			return Config{}, err
 		}
 		if fetcher == nil {
-			return Config{}, fmt.Errorf("no password fetcher available.")
+			return Config{}, fmt.Errorf("no password fetcher available")
 		}
 		pw, err := fetcher(src, profile.PasswordEntry)
 		if err != nil {
 			return Config{}, err
 		}
 		if pw == "" {
-			return Config{}, fmt.Errorf("password entry '%s' in database profile '%s' does not contain a password.", profile.PasswordEntry, profile.PasswordDatabase)
+			return Config{}, fmt.Errorf("password entry '%s' in database profile '%s' does not contain a password", profile.PasswordEntry, profile.PasswordDatabase)
 		}
 		password = pw
 	}
@@ -89,7 +89,7 @@ type RuntimeFlags struct {
 // the final Config. Mirrors Python's resolve_runtime_config.
 func ResolveRuntime(fc FileConfig, selectedDatabase string, flags RuntimeFlags, fetcher PasswordFetcher, log io.Writer) (Config, error) {
 	if selectedDatabase != "" && flags.Database != "" {
-		return Config{}, fmt.Errorf("cannot combine @db with --database.")
+		return Config{}, fmt.Errorf("cannot combine @db with --database")
 	}
 
 	profileName := selectedDatabase
@@ -106,7 +106,7 @@ func ResolveRuntime(fc FileConfig, selectedDatabase string, flags RuntimeFlags, 
 			}
 			profileConfig = &c
 		} else if selectedDatabase != "" {
-			return Config{}, fmt.Errorf("Unknown database profile: %s", selectedDatabase)
+			return Config{}, fmt.Errorf("unknown database profile: %s", selectedDatabase)
 		}
 	}
 

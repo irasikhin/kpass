@@ -31,18 +31,18 @@ type Spec struct {
 func Parse(uri string) (Spec, error) {
 	u, err := url.Parse(uri)
 	if err != nil || u.Scheme != "otpauth" {
-		return Spec{}, fmt.Errorf("OTP value is not an otpauth URI.")
+		return Spec{}, fmt.Errorf("oTP value is not an otpauth URI")
 	}
 	q := u.Query()
 	secret := q.Get("secret")
 	if secret == "" {
-		return Spec{}, fmt.Errorf("OTP URI does not contain a secret.")
+		return Spec{}, fmt.Errorf("oTP URI does not contain a secret")
 	}
 	digits := 6
 	if v := q.Get("digits"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return Spec{}, fmt.Errorf("Invalid OTP digits: %s", v)
+			return Spec{}, fmt.Errorf("invalid OTP digits: %s", v)
 		}
 		digits = n
 	}
@@ -50,7 +50,7 @@ func Parse(uri string) (Spec, error) {
 	if v := q.Get("period"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil {
-			return Spec{}, fmt.Errorf("Invalid OTP period: %s", v)
+			return Spec{}, fmt.Errorf("invalid OTP period: %s", v)
 		}
 		period = n
 	}
@@ -65,7 +65,7 @@ func Parse(uri string) (Spec, error) {
 // time, the current wall time is used. Mirrors Python generate_totp.
 func Generate(uri string, now time.Time) (string, error) {
 	if uri == "" {
-		return "", fmt.Errorf("Entry does not contain OTP data.")
+		return "", fmt.Errorf("entry does not contain OTP data")
 	}
 	spec, err := Parse(uri)
 	if err != nil {
@@ -80,7 +80,7 @@ func Generate(uri string, now time.Time) (string, error) {
 	case "SHA512":
 		hasher = sha512.New
 	default:
-		return "", fmt.Errorf("Unsupported OTP algorithm: %s", spec.Algorithm)
+		return "", fmt.Errorf("unsupported OTP algorithm: %s", spec.Algorithm)
 	}
 
 	normalized := strings.ToUpper(spec.Secret)
@@ -89,7 +89,7 @@ func Generate(uri string, now time.Time) (string, error) {
 	}
 	key, err := base32.StdEncoding.DecodeString(normalized)
 	if err != nil {
-		return "", fmt.Errorf("Invalid OTP secret: %v", err)
+		return "", fmt.Errorf("invalid OTP secret: %v", err)
 	}
 
 	if now.IsZero() {

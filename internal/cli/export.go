@@ -256,7 +256,7 @@ type importEntry struct {
 func parseJSONImport(data []byte) ([]importEntry, error) {
 	var raw []map[string]any
 	if err := json.Unmarshal(data, &raw); err != nil {
-		return nil, fmt.Errorf("Invalid JSON: %v", err)
+		return nil, fmt.Errorf("invalid JSON: %v", err)
 	}
 	var out []importEntry
 	for _, m := range raw {
@@ -276,7 +276,7 @@ func parseJSONImport(data []byte) ([]importEntry, error) {
 			}
 		}
 		if ie.Path == "" {
-			return nil, fmt.Errorf("Entry missing 'path' field")
+			return nil, fmt.Errorf("entry missing 'path' field")
 		}
 		out = append(out, ie)
 	}
@@ -287,10 +287,10 @@ func parseCSVImport(data []byte) ([]importEntry, error) {
 	r := csv.NewReader(strings.NewReader(string(data)))
 	records, err := r.ReadAll()
 	if err != nil {
-		return nil, fmt.Errorf("Invalid CSV: %v", err)
+		return nil, fmt.Errorf("invalid CSV: %v", err)
 	}
 	if len(records) < 2 {
-		return nil, fmt.Errorf("CSV must have a header row plus data")
+		return nil, fmt.Errorf("cSV must have a header row plus data")
 	}
 	header := records[0]
 	colIndex := map[string]int{}
@@ -299,7 +299,7 @@ func parseCSVImport(data []byte) ([]importEntry, error) {
 	}
 	pathIdx, ok := colIndex["path"]
 	if !ok {
-		return nil, fmt.Errorf("CSV must have a 'path' column")
+		return nil, fmt.Errorf("cSV must have a 'path' column")
 	}
 	get := func(row []string, name string) string {
 		if idx, ok := colIndex[name]; ok && idx < len(row) {

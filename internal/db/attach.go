@@ -20,11 +20,11 @@ func (e *Entry) AttachmentList() []string {
 func (e *Entry) AttachmentContent(name string) ([]byte, error) {
 	idx := e.findBinary(name)
 	if idx == -1 {
-		return nil, fmt.Errorf("Attachment not found: %s", name)
+		return nil, fmt.Errorf("attachment not found: %s", name)
 	}
 	binary := e.d.Raw.FindBinary(e.e.Binaries[idx].Value.ID)
 	if binary == nil {
-		return nil, fmt.Errorf("Attachment binary missing: %s", name)
+		return nil, fmt.Errorf("attachment binary missing: %s", name)
 	}
 	return binary.GetContentBytes()
 }
@@ -41,7 +41,7 @@ func (e *Entry) AttachmentExists(name string) bool {
 func (e *Entry) AddAttachment(name string, data []byte, force bool) error {
 	if existing := e.findBinary(name); existing != -1 {
 		if !force {
-			return fmt.Errorf("Attachment already exists: %s. Use --force to replace it.", name)
+			return fmt.Errorf("attachment already exists: %s. Use --force to replace it", name)
 		}
 		e.e.Binaries = append(e.e.Binaries[:existing], e.e.Binaries[existing+1:]...)
 	}
@@ -54,7 +54,7 @@ func (e *Entry) AddAttachment(name string, data []byte, force bool) error {
 func (e *Entry) RemoveAttachment(name string) error {
 	idx := e.findBinary(name)
 	if idx == -1 {
-		return fmt.Errorf("Attachment not found: %s", name)
+		return fmt.Errorf("attachment not found: %s", name)
 	}
 	e.e.Binaries = append(e.e.Binaries[:idx], e.e.Binaries[idx+1:]...)
 	return nil

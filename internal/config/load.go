@@ -40,10 +40,10 @@ func Load(explicit string) (FileConfig, string, error) {
 		if os.IsNotExist(err) {
 			return FileConfig{}, path, nil
 		}
-		return FileConfig{}, path, fmt.Errorf("KPass config path is not accessible: %s", path)
+		return FileConfig{}, path, fmt.Errorf("kpass config path is not accessible: %s", path)
 	}
 	if info.IsDir() {
-		return FileConfig{}, path, fmt.Errorf("KPass config path is not a file: %s", path)
+		return FileConfig{}, path, fmt.Errorf("kpass config path is not a file: %s", path)
 	}
 
 	data, err := os.ReadFile(path)
@@ -59,7 +59,7 @@ func Load(explicit string) (FileConfig, string, error) {
 	for k := range raw {
 		if !topLevelKeys[k] {
 			unknown := sortedUnknown(raw, topLevelKeys)
-			return FileConfig{}, path, fmt.Errorf("Unsupported KPass config key(s): %s", strings.Join(unknown, ", "))
+			return FileConfig{}, path, fmt.Errorf("unsupported KPass config key(s): %s", strings.Join(unknown, ", "))
 		}
 	}
 
@@ -68,12 +68,12 @@ func Load(explicit string) (FileConfig, string, error) {
 		return FileConfig{}, path, err
 	}
 	if defaultDB == "" || strings.TrimSpace(defaultDB) == "" {
-		return FileConfig{}, path, fmt.Errorf("KPass config must define a non-empty top-level 'default' database profile name.")
+		return FileConfig{}, path, fmt.Errorf("kpass config must define a non-empty top-level 'default' database profile name")
 	}
 
 	dbsRaw, _ := raw["databases"].(map[string]any)
 	if len(dbsRaw) == 0 {
-		return FileConfig{}, path, fmt.Errorf("KPass config must define at least one [databases.<name>] profile.")
+		return FileConfig{}, path, fmt.Errorf("kpass config must define at least one [databases.<name>] profile")
 	}
 
 	names := make([]string, 0, len(dbsRaw))
@@ -92,7 +92,7 @@ func Load(explicit string) (FileConfig, string, error) {
 	}
 
 	if _, ok := dbs[defaultDB]; !ok {
-		return FileConfig{}, path, fmt.Errorf("Default database profile not found: %s", defaultDB)
+		return FileConfig{}, path, fmt.Errorf("default database profile not found: %s", defaultDB)
 	}
 
 	return FileConfig{DefaultDatabase: defaultDB, Databases: dbs}, path, nil
@@ -102,7 +102,7 @@ func defaultDatabase(raw map[string]any) (string, error) {
 	def, hasDefault := raw["default"].(string)
 	legacy, hasLegacy := raw["default_database"].(string)
 	if hasDefault && hasLegacy && def != legacy {
-		return "", fmt.Errorf("KPass config cannot define both 'default' and legacy 'default_database' with different values.")
+		return "", fmt.Errorf("kpass config cannot define both 'default' and legacy 'default_database' with different values")
 	}
 	if hasDefault {
 		return def, nil
@@ -116,7 +116,7 @@ func defaultDatabase(raw map[string]any) (string, error) {
 func parseProfile(name string, raw any, path string) (Profile, error) {
 	data, ok := raw.(map[string]any)
 	if !ok {
-		return Profile{}, fmt.Errorf("KPass database profile '%s' must be a TOML table: %s", name, path)
+		return Profile{}, fmt.Errorf("kpass database profile '%s' must be a TOML table: %s", name, path)
 	}
 
 	var unknown []string
@@ -127,25 +127,25 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	}
 	if len(unknown) > 0 {
 		sort.Strings(unknown)
-		return Profile{}, fmt.Errorf("Unsupported KPass config key(s) in profile '%s': %s", name, strings.Join(unknown, ", "))
+		return Profile{}, fmt.Errorf("unsupported KPass config key(s) in profile '%s': %s", name, strings.Join(unknown, ", "))
 	}
 
 	database, ok := data["database"].(string)
 	if !ok || strings.TrimSpace(database) == "" {
-		return Profile{}, fmt.Errorf("KPass database profile '%s' must define a non-empty 'database' path.", name)
+		return Profile{}, fmt.Errorf("kpass database profile '%s' must define a non-empty 'database' path", name)
 	}
 
 	var ttl *int
 	if v, ok := data["session_ttl"]; ok {
 		t, err := asInt(v)
 		if err != nil {
-			return Profile{}, fmt.Errorf("KPass config key 'session_ttl' in profile '%s' must be an integer.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'session_ttl' in profile '%s' must be an integer", name)
 		}
 		ttl = &t
 	} else if v, ok := data["cache_ttl"]; ok {
 		t, err := asInt(v)
 		if err != nil {
-			return Profile{}, fmt.Errorf("KPass config key 'session_ttl' in profile '%s' must be an integer.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'session_ttl' in profile '%s' must be an integer", name)
 		}
 		ttl = &t
 	}
@@ -154,13 +154,13 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	if v, ok := data["no_session"]; ok {
 		b, err := asBool(v)
 		if err != nil {
-			return Profile{}, fmt.Errorf("KPass config key 'no_session' in profile '%s' must be a boolean.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'no_session' in profile '%s' must be a boolean", name)
 		}
 		noCache = &b
 	} else if v, ok := data["no_cache"]; ok {
 		b, err := asBool(v)
 		if err != nil {
-			return Profile{}, fmt.Errorf("KPass config key 'no_session' in profile '%s' must be a boolean.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'no_session' in profile '%s' must be a boolean", name)
 		}
 		noCache = &b
 	}
@@ -168,7 +168,7 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	for _, k := range []string{"password_file", "key_file", "password_database", "password_entry"} {
 		if v, ok := data[k]; ok {
 			if _, ok := v.(string); !ok {
-				return Profile{}, fmt.Errorf("KPass config key '%s' in profile '%s' must be a string.", k, name)
+				return Profile{}, fmt.Errorf("kpass config key '%s' in profile '%s' must be a string", k, name)
 			}
 		}
 	}
@@ -179,17 +179,17 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	keyFile, _ := data["key_file"].(string)
 
 	if passwordFile != "" && (passwordDB != "" || passwordEntry != "") {
-		return Profile{}, fmt.Errorf("KPass database profile '%s' cannot combine 'password_file' with password lookup from another database.", name)
+		return Profile{}, fmt.Errorf("kpass database profile '%s' cannot combine 'password_file' with password lookup from another database", name)
 	}
 	if (passwordDB == "") != (passwordEntry == "") {
-		return Profile{}, fmt.Errorf("KPass database profile '%s' must set both 'password_database' and 'password_entry' together.", name)
+		return Profile{}, fmt.Errorf("kpass database profile '%s' must set both 'password_database' and 'password_entry' together", name)
 	}
 
 	var backupKeep int
 	if v, ok := data["backup_keep"]; ok {
 		n, err := asInt(v)
 		if err != nil || n < 0 {
-			return Profile{}, fmt.Errorf("KPass config key 'backup_keep' in profile '%s' must be a non-negative integer.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'backup_keep' in profile '%s' must be a non-negative integer", name)
 		}
 		backupKeep = n
 	}
@@ -197,7 +197,7 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 	if v, ok := data["backup_max_age_days"]; ok {
 		n, err := asInt(v)
 		if err != nil || n < 0 {
-			return Profile{}, fmt.Errorf("KPass config key 'backup_max_age_days' in profile '%s' must be a non-negative integer.", name)
+			return Profile{}, fmt.Errorf("kpass config key 'backup_max_age_days' in profile '%s' must be a non-negative integer", name)
 		}
 		backupMaxAge = n
 	}

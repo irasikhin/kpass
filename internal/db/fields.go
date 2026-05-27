@@ -99,7 +99,7 @@ func (e *Entry) GetAttribute(attr string) (string, error) {
 			return v.Value.Content, nil
 		}
 	}
-	return "", fmt.Errorf("Field not found: %s", attr)
+	return "", fmt.Errorf("field not found: %s", attr)
 }
 
 // OtpURI returns the stored otpauth:// URI (the "otp" custom field).

@@ -86,7 +86,7 @@ func TestAttachAddForceReplaces(t *testing.T) {
 	if code != 1 {
 		t.Fatalf("code=%d", code)
 	}
-	if !strings.Contains(stderr, "Attachment already exists: doc.pdf. Use --force to replace it.") {
+	if !strings.Contains(stderr, "attachment already exists: doc.pdf. Use --force to replace it") {
 		t.Fatalf("stderr=%q", stderr)
 	}
 

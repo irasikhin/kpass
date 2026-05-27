@@ -45,7 +45,7 @@ func Edit(initial string, explicit string) (string, error) {
 		return "", err
 	}
 	if status != 0 {
-		return "", fmt.Errorf("editor exited with status %d.", status)
+		return "", fmt.Errorf("editor exited with status %d", status)
 	}
 	data, err := os.ReadFile(tmpPath)
 	if err != nil {
@@ -73,11 +73,11 @@ func EditorArgv(explicit string) ([]string, error) {
 		}
 	}
 	if editor == "" {
-		return nil, errors.New("no editor found. Set $VISUAL or $EDITOR.")
+		return nil, errors.New("no editor found. Set $VISUAL or $EDITOR")
 	}
 	argv := strings.Fields(editor)
 	if len(argv) == 0 {
-		return nil, errors.New("editor command cannot be empty.")
+		return nil, errors.New("editor command cannot be empty")
 	}
 	return argv, nil
 }

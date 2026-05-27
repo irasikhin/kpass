@@ -41,7 +41,7 @@ func PromptSecret(prompt string, confirm bool) (string, error) {
 		return "", err
 	}
 	if string(first) != string(second) {
-		return "", errors.New("Values do not match.")
+		return "", errors.New("values do not match")
 	}
 	return string(first), nil
 }

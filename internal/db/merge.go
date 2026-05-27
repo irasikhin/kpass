@@ -48,7 +48,7 @@ func (d *DB) Merge(source *DB, opts MergeOpts) (MergeStats, error) {
 		if existing != nil {
 			switch opts.OnConflict {
 			case ConflictError:
-				return stats, fmt.Errorf("Merge conflict on entry: %s", entryPath)
+				return stats, fmt.Errorf("merge conflict on entry: %s", entryPath)
 			case ConflictSkip:
 				stats.Skipped++
 				continue
@@ -216,7 +216,7 @@ func OpenSimple(dbPath, passwordFile, keyFile, inlinePassword string) (*DB, erro
 		password = data
 	}
 	if password == "" && passwordFile == "" && keyFile == "" {
-		return nil, fmt.Errorf("OpenSimple requires at least a password or key file.")
+		return nil, fmt.Errorf("openSimple requires at least a password or key file")
 	}
 	creds, err := buildCreds(password, keyFile)
 	if err != nil {

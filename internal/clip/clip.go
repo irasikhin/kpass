@@ -20,7 +20,7 @@ func Backend() (string, error) {
 			return "wl", nil
 		}
 		return "", errors.New(
-			"Wayland detected. Install wl-clipboard: https://github.com/bugaevc/wl-clipboard")
+			"wayland detected; install wl-clipboard: https://github.com/bugaevc/wl-clipboard")
 	}
 	if look("xclip") {
 		return "xclip", nil

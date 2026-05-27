@@ -43,7 +43,7 @@ func Charset(lower, upper, digits, symbols bool, customSymbols string) (string, 
 		out += g
 	}
 	if out == "" {
-		return "", fmt.Errorf("empty password charset.")
+		return "", fmt.Errorf("empty password charset")
 	}
 	return out, nil
 }
@@ -53,7 +53,7 @@ func Charset(lower, upper, digits, symbols bool, customSymbols string) (string, 
 // symbols are enabled.
 func Generate(length int, lower, upper, digits, symbols bool, customSymbols string) (string, error) {
 	if length <= 0 {
-		return "", fmt.Errorf("password length must be positive.")
+		return "", fmt.Errorf("password length must be positive")
 	}
 	charset, err := Charset(lower, upper, digits, symbols, customSymbols)
 	if err != nil {
@@ -77,7 +77,7 @@ func Generate(length int, lower, upper, digits, symbols bool, customSymbols stri
 		required = append(required, symSet)
 	}
 	if len(required) > 0 && length < len(required) {
-		return "", fmt.Errorf("password length is shorter than the number of required character groups.")
+		return "", fmt.Errorf("password length is shorter than the number of required character groups")
 	}
 
 	out := make([]byte, 0, length)

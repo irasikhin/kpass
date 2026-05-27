@@ -70,21 +70,21 @@ func Parse(text string) (Fields, error) {
 	}
 
 	if !inNotes {
-		return Fields{}, fmt.Errorf("edited entry is missing the '---' notes separator.")
+		return Fields{}, fmt.Errorf("edited entry is missing the '---' notes separator")
 	}
 	seen := map[string]bool{}
 	for _, line := range headerLines {
 		i := strings.IndexByte(line, ':')
 		if i < 0 {
-			return Fields{}, fmt.Errorf("Invalid edit line: %s", line)
+			return Fields{}, fmt.Errorf("invalid edit line: %s", line)
 		}
 		key := strings.ToLower(strings.TrimSpace(line[:i]))
 		val := strings.TrimLeft(line[i+1:], " ")
 		if _, ok := values[key]; !ok {
-			return Fields{}, fmt.Errorf("Unsupported edit field: %s", key)
+			return Fields{}, fmt.Errorf("unsupported edit field: %s", key)
 		}
 		if seen[key] {
-			return Fields{}, fmt.Errorf("Duplicate edit field: %s", key)
+			return Fields{}, fmt.Errorf("duplicate edit field: %s", key)
 		}
 		values[key] = val
 		seen[key] = true

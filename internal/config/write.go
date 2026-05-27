@@ -12,10 +12,10 @@ import (
 // WriteAtomic serializes fc to path. Mirrors Python's dump_file_config.
 func WriteAtomic(path string, fc FileConfig) error {
 	if fc.DefaultDatabase == "" {
-		return fmt.Errorf("KPass config must define a default database profile name.")
+		return fmt.Errorf("kpass config must define a default database profile name")
 	}
 	if len(fc.Databases) == 0 {
-		return fmt.Errorf("KPass config must define at least one [databases.<name>] profile.")
+		return fmt.Errorf("kpass config must define at least one [databases.<name>] profile")
 	}
 	body := Dump(fc)
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {

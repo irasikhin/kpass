@@ -17,7 +17,7 @@ func EnvCacheTTL() (int, error) {
 	}
 	v, err := strconv.Atoi(raw)
 	if err != nil {
-		return 0, fmt.Errorf("KPASS_SESSION_TTL must be an integer.")
+		return 0, fmt.Errorf("invalid KPASS_SESSION_TTL: must be an integer")
 	}
 	return v, nil
 }

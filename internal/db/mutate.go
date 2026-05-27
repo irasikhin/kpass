@@ -104,7 +104,7 @@ func (d *DB) DeleteEntry(e *Entry) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Entry not found in parent during delete: %s", e.DisplayPath())
+	return fmt.Errorf("entry not found in parent during delete: %s", e.DisplayPath())
 }
 
 // MoveEntry removes e from its current parent and re-attaches it under dst.
@@ -203,12 +203,12 @@ func isEmptyGroup(g *gokeepasslib.Group, hasEntries map[*gokeepasslib.Group]bool
 func (d *DB) RemoveGroup(path string) error {
 	normalized := runtimex.NormalizePath(path)
 	if normalized == "" {
-		return fmt.Errorf("cannot remove root group.")
+		return fmt.Errorf("cannot remove root group")
 	}
 	parts := runtimex.SplitPath(normalized)
 	root := d.rootGroup()
 	if root == nil {
-		return fmt.Errorf("Database has no root group.")
+		return fmt.Errorf("database has no root group")
 	}
 	return removeGroupAt(root, parts)
 }
@@ -228,5 +228,5 @@ func removeGroupAt(parent *gokeepasslib.Group, path []string) error {
 			return removeGroupAt(&parent.Groups[i], path[1:])
 		}
 	}
-	return fmt.Errorf("Group not found: %s", name)
+	return fmt.Errorf("group not found: %s", name)
 }
