@@ -1,6 +1,6 @@
 # kpass
 
-[![CI](https://github.com/irasikhin/kpass/actions/workflows/ci.yml/badge.svg)](https://github.com/irasikhin/kpass/actions/workflows/ci.yml)
+[![CI](https://github.com/irasikhin/kpass/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/irasikhin/kpass/actions/workflows/ci.yml?query=branch%3Amain)
 [![Coverage](https://img.shields.io/badge/coverage-88.2%25-brightgreen.svg)](#testing)
 [![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
