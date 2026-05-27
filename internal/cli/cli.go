@@ -72,11 +72,6 @@ func Run(argv []string, in io.Reader, out, errw io.Writer) int {
 	// Detect terminal and NO_COLOR before anything prints.
 	color.Init()
 
-	// Hidden child-process branch — never goes through kong.
-	if len(argv) > 0 && argv[0] == "__clear-clipboard" {
-		return runClearClipboard(argv)
-	}
-
 	c := &ctx{in: in, out: out, errw: errw}
 	if err := runOnce(c, argv); err != nil {
 		switch {
@@ -154,12 +149,6 @@ func runOnce(c *ctx, argv []string) error {
 		return nil
 	}
 	if err != nil {
-		// Legacy command hints.
-		if token := legacyTokenFromError(err); token != "" {
-			if msg, ok := legacyHints[token]; ok {
-				return &UserError{Msg: msg}
-			}
-		}
 		if isUsageError(err) {
 			restHelp := append([]string{}, rest...)
 			restHelp = append(restHelp, "--help")
@@ -222,22 +211,6 @@ func runOnce(c *ctx, argv []string) error {
 		return err
 	}
 	return nil
-}
-
-// legacyTokenFromError extracts the unknown command token from a kong parse
-// error like `unexpected argument "show"`.
-func legacyTokenFromError(err error) string {
-	msg := err.Error()
-	const prefix = "unexpected argument "
-	if i := strings.Index(msg, prefix); i >= 0 {
-		rest := msg[i+len(prefix):]
-		rest = strings.Trim(rest, "\"' ")
-		if idx := strings.Index(rest, ", did you mean"); idx >= 0 {
-			rest = rest[:idx]
-		}
-		return rest
-	}
-	return ""
 }
 
 // kongExit is the panic value used to intercept kong.Exit invocations so that
@@ -313,12 +286,7 @@ func reshapeKongError(err error) string {
 			arg = rest[:i]
 		}
 		arg = strings.Trim(arg, "\"' ")
-		hint := suggestCommand(arg)
-		base := fmt.Sprintf("kpass: argument command: invalid choice: '%s'", arg)
-		if hint != "" {
-			return base + fmt.Sprintf("\n\nDid you mean '%s'?\nUse 'kpass --help' for usage.", hint)
-		}
-		return base + "\nUse 'kpass --help' for usage."
+		return fmt.Sprintf("kpass: argument command: invalid choice: '%s'\nUse 'kpass --help' for usage.", arg)
 	}
 	return "kpass: " + msg + "\nUse 'kpass --help' for usage."
 }
