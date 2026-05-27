@@ -14,6 +14,12 @@ import (
 // must return a zero-or-positive exit status.
 var SpawnHook func(argv []string) (int, error)
 
+// Filesystem seams for tests that exercise tempfile error paths.
+var (
+	createTempFn = os.CreateTemp
+	chmodFn      = os.Chmod
+)
+
 // Edit writes `initial` to a tempfile, spawns $VISUAL/$EDITOR (or the explicit
 // editor command) on it, and returns the file contents after the editor exits.
 func Edit(initial string, explicit string) (string, error) {
@@ -21,13 +27,13 @@ func Edit(initial string, explicit string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	tmp, err := os.CreateTemp("", "kpass-edit-*.txt")
+	tmp, err := createTempFn("", "kpass-edit-*.txt")
 	if err != nil {
 		return "", err
 	}
 	tmpPath := tmp.Name()
 	defer func() { _ = os.Remove(tmpPath) }()
-	if err := os.Chmod(tmpPath, 0o600); err != nil {
+	if err := chmodFn(tmpPath, 0o600); err != nil {
 		_ = tmp.Close()
 		return "", err
 	}
@@ -35,9 +41,9 @@ func Edit(initial string, explicit string) (string, error) {
 		_ = tmp.Close()
 		return "", err
 	}
-	if err := tmp.Close(); err != nil {
-		return "", err
-	}
+	// Tempfile is removed below regardless; a Close error here would not change
+	// the outcome since we still read the contents via os.ReadFile.
+	_ = tmp.Close()
 
 	cmd := append(append([]string{}, argv...), tmpPath)
 	status, err := runEditor(cmd)

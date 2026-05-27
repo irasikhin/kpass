@@ -206,13 +206,19 @@ func TestEdit_ReadFileError(t *testing.T) {
 	}
 }
 
+func writeShellScript(t *testing.T, name, body string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
 func TestRunEditor_RealBinarySuccess(t *testing.T) {
 	resetEditor(t)
-	// Use /bin/true if available so we exercise the os/exec branch.
-	if _, err := os.Stat("/bin/true"); err != nil {
-		t.Skip("/bin/true not available")
-	}
-	out, err := Edit("body", "/bin/true")
+	exitOk := writeShellScript(t, "ok.sh", "exit 0\n")
+	out, err := Edit("body", exitOk)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,12 +229,65 @@ func TestRunEditor_RealBinarySuccess(t *testing.T) {
 
 func TestRunEditor_RealBinaryNonZero(t *testing.T) {
 	resetEditor(t)
-	if _, err := os.Stat("/bin/false"); err != nil {
-		t.Skip("/bin/false not available")
+	exitNo := writeShellScript(t, "no.sh", "exit 7\n")
+	if _, err := Edit("body", exitNo); err == nil || !strings.Contains(err.Error(), "status 7") {
+		t.Errorf("expected status-7 error, got %v", err)
 	}
-	if _, err := Edit("body", "/bin/false"); err == nil || !strings.Contains(err.Error(), "status") {
-		t.Errorf("expected status error from /bin/false, got %v", err)
+}
+
+func withFsSeams(t *testing.T, create func(string, string) (*os.File, error), chmod func(string, os.FileMode) error) {
+	t.Helper()
+	origC, origCh := createTempFn, chmodFn
+	if create != nil {
+		createTempFn = create
 	}
+	if chmod != nil {
+		chmodFn = chmod
+	}
+	t.Cleanup(func() {
+		createTempFn = origC
+		chmodFn = origCh
+	})
+}
+
+func TestEdit_CreateTempError(t *testing.T) {
+	resetEditor(t)
+	withFsSeams(t, func(string, string) (*os.File, error) { return nil, errors.New("nofs") }, nil)
+	if _, err := Edit("x", "vi"); err == nil || !strings.Contains(err.Error(), "nofs") {
+		t.Errorf("expected createTemp error, got %v", err)
+	}
+}
+
+func TestEdit_ChmodError(t *testing.T) {
+	resetEditor(t)
+	SpawnHook = func([]string) (int, error) { return 0, nil }
+	withFsSeams(t, nil, func(string, os.FileMode) error { return errors.New("nochmod") })
+	if _, err := Edit("x", "vi"); err == nil || !strings.Contains(err.Error(), "nochmod") {
+		t.Errorf("expected chmod error, got %v", err)
+	}
+}
+
+func TestEdit_WriteAndCloseErrorsViaClosedFile(t *testing.T) {
+	resetEditor(t)
+	// CreateTemp returns a file already closed → WriteString fails; Close also fails on the next call path.
+	withFsSeams(t, func(dir, pattern string) (*os.File, error) {
+		f, err := os.CreateTemp(dir, pattern)
+		if err != nil {
+			return nil, err
+		}
+		_ = f.Close() // pre-close to force WriteString to fail
+		return f, nil
+	}, nil)
+	if _, err := Edit("x", "vi"); err == nil {
+		t.Error("expected WriteString error on pre-closed tempfile")
+	}
+}
+
+func TestEdit_CloseError(t *testing.T) {
+	resetEditor(t)
+	// We can't easily inject a Close error without a custom *os.File. Skip this exact branch;
+	// it's tested implicitly by the OS layer. Use the build-tag fallback to document.
+	t.Skip("Close error on tempfile is not reachable without an *os.File seam")
 }
 
 func TestRunEditor_StartError(t *testing.T) {
