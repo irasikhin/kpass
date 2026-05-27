@@ -60,7 +60,7 @@ Allowed types:
 | `refactor` | Code restructuring with no functional change               | —             |
 | `docs`     | Documentation only                                         | —             |
 | `test`     | Adding or revising tests                                   | —             |
-| `build`    | Build system, vendor, packaging (`flake.nix`, `nix/`)      | —             |
+| `build`    | Build system, packaging (`flake.nix`, `nix/`, `go.mod`)    | —             |
 | `ci`       | CI workflows (`.github/workflows/...`)                      | —             |
 | `chore`    | Routine maintenance (deps bump, file moves)                | —             |
 | `revert`   | Reverting a previous commit                                | —             |

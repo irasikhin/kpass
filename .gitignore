@@ -4,6 +4,7 @@
 /kpass
 /cmd/kpass/kpass
 /result
+/dist
 
 # Cache & tools
 /.direnv
