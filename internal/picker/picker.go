@@ -21,6 +21,12 @@ type PickOpts struct {
 // Hook is the test injection seam.
 var Hook func(paths []string, query string) (string, error)
 
+// Seams for unit tests; defaults call into the real environment.
+var (
+	lookPathFn = exec.LookPath
+	runCmdFn   = func(c *exec.Cmd) error { return c.Run() }
+)
+
 func Pick(lines []string, query string, opts PickOpts) (string, error) {
 	if Hook != nil {
 		return Hook(lines, query)
@@ -29,7 +35,7 @@ func Pick(lines []string, query string, opts PickOpts) (string, error) {
 		return "", errors.New("no entries found")
 	}
 
-	binary, err := exec.LookPath("fzf")
+	binary, err := lookPathFn("fzf")
 	if err != nil {
 		return "", errors.New(
 			"fzf not found. Install: https://github.com/junegunn/fzf")
@@ -54,7 +60,7 @@ func Pick(lines []string, query string, opts PickOpts) (string, error) {
 	cmd.Stderr = os.Stderr
 	var out bytes.Buffer
 	cmd.Stdout = &out
-	err = cmd.Run()
+	err = runCmdFn(cmd)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			code := exitErr.ExitCode()
