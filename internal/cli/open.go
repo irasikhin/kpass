@@ -8,10 +8,9 @@ import (
 	"github.com/irasikhin/kpass/internal/color"
 )
 
-// OpenCmd opens an entry's URL (or a custom field) in the system browser.
+// OpenCmd opens an entry's URL in the system browser.
 type OpenCmd struct {
 	Entry string `arg:"" help:"Entry path or partial path."`
-	Field string `short:"F" default:"url" help:"Field to open (must contain a URL)." enum:"url,otp"`
 }
 
 func (cmd *OpenCmd) Run(c *ctx) error {
@@ -23,42 +22,35 @@ func (cmd *OpenCmd) Run(c *ctx) error {
 		return err
 	}
 
-	var target string
-	switch cmd.Field {
-	case "otp":
-		uri := entry.OtpURI()
-		if uri == "" {
-			return &UserError{Msg: fmt.Sprintf("Entry '%s' has no TOTP URI.", entry.DisplayPath())}
-		}
-		target = uri
-	default:
-		url := entry.Raw().GetContent("URL")
-		if url == "" {
-			return &UserError{Msg: fmt.Sprintf("Entry '%s' has no URL.", entry.DisplayPath())}
-		}
-		target = url
+	url := entry.Raw().GetContent("URL")
+	if url == "" {
+		return &UserError{Msg: fmt.Sprintf("Entry '%s' has no URL.", entry.DisplayPath())}
 	}
 
-	opener := openCommand()
-	fmt.Fprintf(c.out, "%s %s\n", color.Faint("Opening"), color.Bold(target))
-	if err := exec.Command(opener, target).Start(); err != nil {
+	argv := append(openCommand(), url)
+	fmt.Fprintf(c.out, "%s %s\n", color.Faint("Opening"), color.Bold(url))
+	if err := exec.Command(argv[0], argv[1:]...).Start(); err != nil {
 		return &UserError{Msg: fmt.Sprintf("Failed to open URL: %v", err)}
 	}
 	return nil
 }
 
-// openCommand returns the platform-appropriate command for opening URLs.
-func openCommand() string {
+// openCommand returns the platform-appropriate command (and argv prefix)
+// for opening URLs. The returned slice is the full argv up to but not
+// including the URL.
+func openCommand() []string {
 	switch runtime.GOOS {
 	case "darwin":
-		return "open"
+		return []string{"open"}
 	case "windows":
-		return "rundll32"
+		// `cmd /c start "" <url>` — the empty title argument is required
+		// because start interprets the first quoted arg as the window title.
+		return []string{"cmd", "/c", "start", ""}
 	default:
 		// Linux, BSD, etc. — prefer xdg-open.
 		if path, err := exec.LookPath("xdg-open"); err == nil {
-			return path
+			return []string{path}
 		}
-		return "xdg-open" // fallback; exec will fail with a clear error
+		return []string{"xdg-open"} // fallback; exec will fail with a clear error
 	}
 }

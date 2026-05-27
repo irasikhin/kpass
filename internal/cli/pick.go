@@ -138,8 +138,9 @@ func (cmd *PickCmd) actionOpen(c *ctx, entry *db.Entry, selected string) error {
 	if url == "" {
 		return &UserError{Msg: fmt.Sprintf("Entry '%s' has no URL.", selected)}
 	}
+	argv := append(openCommand(), url)
 	fmt.Fprintf(c.out, "%s %s\n", color.Faint("Opening"), color.Bold(url))
-	if err := exec.Command(openCommand(), url).Start(); err != nil {
+	if err := exec.Command(argv[0], argv[1:]...).Start(); err != nil {
 		return &UserError{Msg: fmt.Sprintf("Failed to open URL: %v", err)}
 	}
 	return nil
