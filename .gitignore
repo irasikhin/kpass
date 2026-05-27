@@ -10,3 +10,6 @@
 /.direnv
 /.pre-commit-cache
 /.golangci-lint-cache
+
+# Editor / tooling state
+/.claude/
