@@ -48,18 +48,18 @@ default = "work"
 database = "~/keepass/work.kdbx"
 ```
 
-`kpass init` writes this for you. The full per-profile schema (key file,
-password file, password lookup from another profile, session/cache TTL,
-backup retention) is parsed by `internal/config.parseProfile`; see
-[CONTRIBUTING.md](./CONTRIBUTING.md) for the field list. `kpass db add
-NAME PATH` registers a new profile from the command line for the most
-common cases (`--password-database` + `--password-entry`, key/cache via
-the matching global flags).
+`kpass init` writes this for you. The full schema — every per-profile
+key, environment variable, and global flag that can override config,
+plus worked examples (chained passwords, key files, backup retention) —
+is in [docs/CONFIG.md](./docs/CONFIG.md). `kpass db add NAME PATH` /
+`kpass db remove NAME` / `kpass db default NAME` edit profiles from the
+command line.
 
 ## Docs
 
 - `kpass --help` — full command list and global flags
 - `kpass <cmd> --help` — per-command options and examples
+- [docs/CONFIG.md](./docs/CONFIG.md) — full config reference (TOML keys, env vars, examples)
 - [SECURITY.md](./SECURITY.md) — vulnerability reporting and secret-handling notes
 - [CHANGELOG.md](./CHANGELOG.md) — what's in this release
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — development setup, conventions, releases
