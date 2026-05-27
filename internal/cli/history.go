@@ -9,6 +9,7 @@ import (
 	w "github.com/tobischo/gokeepasslib/v3/wrappers"
 
 	"github.com/irasikhin/kpass/internal/color"
+	"github.com/irasikhin/kpass/internal/db"
 )
 
 // HistoryCmd shows or restores entry history (KeePass built-in versioning).
@@ -31,6 +32,14 @@ first). The current version is marked with *.
   --restore N  Replace the current entry with history version #N.`
 }
 
+// historyEntry is a flat view of one history version: KeePass nests Entries
+// inside Histories so we expand them out and number them globally.
+type historyEntry struct {
+	idx   int
+	entry *gokeepasslib.Entry
+	time  time.Time
+}
+
 func (cmd *HistoryCmd) Run(c *ctx) error {
 	if err := c.openDatabase(); err != nil {
 		return err
@@ -40,23 +49,26 @@ func (cmd *HistoryCmd) Run(c *ctx) error {
 		return err
 	}
 
-	raw := entry.Raw()
-	histories := raw.Histories
-
-	if len(histories) == 0 {
+	items := flattenHistory(entry.Raw())
+	if len(items) == 0 {
 		fmt.Fprintln(c.out, color.Faint("No history entries."))
 		return nil
 	}
 
-	// Flatten: each History may contain multiple Entries.
-	type historyEntry struct {
-		idx   int
-		entry *gokeepasslib.Entry
-		time  time.Time
+	switch {
+	case cmd.Restore >= 0:
+		return cmd.runRestore(c, entry, items)
+	case cmd.Diff:
+		return cmd.runDiff(c, entry, items)
+	default:
+		return cmd.runList(c, entry, items)
 	}
+}
+
+func flattenHistory(raw *gokeepasslib.Entry) []historyEntry {
 	var items []historyEntry
 	idx := 0
-	for _, h := range histories {
+	for _, h := range raw.Histories {
 		for i := range h.Entries {
 			e := &h.Entries[i]
 			t := time.Now()
@@ -67,43 +79,42 @@ func (cmd *HistoryCmd) Run(c *ctx) error {
 			idx++
 		}
 	}
+	return items
+}
 
-	if cmd.Restore >= 0 {
-		if cmd.Restore >= len(items) {
-			return &UserError{Msg: fmt.Sprintf("History index %d out of range (0-%d).", cmd.Restore, len(items)-1)}
-		}
-		hist := items[cmd.Restore]
-		restoreEntry(raw, hist.entry)
-		if err := c.db.Save(); err != nil {
-			return &UserError{Msg: err.Error()}
-		}
-		fmt.Fprintf(c.out, "%s %s\n", color.Green("Restored version"), color.Bold(fmt.Sprintf("#%d", cmd.Restore)))
-		fmt.Fprintf(c.out, "  %s %s\n", color.Faint("from"), hist.time.Format("2006-01-02 15:04:05"))
+func (cmd *HistoryCmd) runRestore(c *ctx, entry *db.Entry, items []historyEntry) error {
+	if cmd.Restore >= len(items) {
+		return &UserError{Msg: fmt.Sprintf("History index %d out of range (0-%d).", cmd.Restore, len(items)-1)}
+	}
+	hist := items[cmd.Restore]
+	restoreEntry(entry.Raw(), hist.entry)
+	if err := c.db.Save(); err != nil {
+		return &UserError{Msg: err.Error()}
+	}
+	fmt.Fprintf(c.out, "%s %s\n", color.Green("Restored version"), color.Bold(fmt.Sprintf("#%d", cmd.Restore)))
+	fmt.Fprintf(c.out, "  %s %s\n", color.Faint("from"), hist.time.Format("2006-01-02 15:04:05"))
+	return nil
+}
+
+func (cmd *HistoryCmd) runDiff(c *ctx, entry *db.Entry, items []historyEntry) error {
+	latest := items[len(items)-1]
+	changes := diffEntries(entry.Raw(), latest.entry)
+	if len(changes) == 0 {
+		fmt.Fprintln(c.out, color.Faint("No differences from current version."))
 		return nil
 	}
-
-	if cmd.Diff {
-		if len(items) == 0 {
-			return nil
-		}
-		latest := items[len(items)-1]
-		changes := diffEntries(raw, latest.entry)
-		if len(changes) == 0 {
-			fmt.Fprintln(c.out, color.Faint("No differences from current version."))
-		} else {
-			fmt.Fprintf(c.out, "%s %s\n", color.Bold("Diff vs"), color.Faint(fmt.Sprintf("version #%d (%s)", latest.idx, latest.time.Format("2006-01-02 15:04"))))
-			for _, ch := range changes {
-				fmt.Fprintf(c.out, "  %s %s %s %s\n",
-					color.Cyan(ch.field+":"),
-					color.Red(ch.old),
-					color.Faint("→"),
-					color.Green(ch.new))
-			}
-		}
-		return nil
+	fmt.Fprintf(c.out, "%s %s\n", color.Bold("Diff vs"), color.Faint(fmt.Sprintf("version #%d (%s)", latest.idx, latest.time.Format("2006-01-02 15:04"))))
+	for _, ch := range changes {
+		fmt.Fprintf(c.out, "  %s %s %s %s\n",
+			color.Cyan(ch.field+":"),
+			color.Red(ch.old),
+			color.Faint("→"),
+			color.Green(ch.new))
 	}
+	return nil
+}
 
-	// Default: list history.
+func (cmd *HistoryCmd) runList(c *ctx, entry *db.Entry, items []historyEntry) error {
 	fmt.Fprintln(c.out, color.Bold(entry.DisplayPath()))
 	for i := len(items) - 1; i >= 0; i-- {
 		e := items[i]
@@ -111,12 +122,11 @@ func (cmd *HistoryCmd) Run(c *ctx) error {
 		if i == len(items)-1 {
 			marker = color.Green("*")
 		}
-		title := e.entry.GetTitle()
 		fmt.Fprintf(c.out, "%s %s %s %s\n",
 			marker,
 			color.Faint(fmt.Sprintf("#%d", e.idx)),
 			e.time.Format("2006-01-02 15:04:05"),
-			color.Faint(title))
+			color.Faint(e.entry.GetTitle()))
 	}
 	fmt.Fprintf(c.out, "\n%s %s\n",
 		color.Faint("Total:"),
@@ -126,31 +136,27 @@ func (cmd *HistoryCmd) Run(c *ctx) error {
 
 // restoreEntry copies fields from src into dst (current entry).
 func restoreEntry(dst, src *gokeepasslib.Entry) {
-	// Copy standard values.
-	copyValue(dst, src, "Title")
-	copyValue(dst, src, "UserName")
-	copyValue(dst, src, "Password")
-	copyValue(dst, src, "URL")
-	copyValue(dst, src, "Notes")
-	copyValue(dst, src, "otp")
-	// Copy all other values.
+	for _, key := range []string{"Title", "UserName", "Password", "URL", "Notes", "otp"} {
+		copyValue(dst, src, key)
+	}
+	known := map[string]bool{
+		"Title": true, "UserName": true, "Password": true,
+		"URL": true, "Notes": true, "otp": true,
+	}
 	for _, sv := range src.Values {
-		known := map[string]bool{
-			"Title": true, "UserName": true, "Password": true,
-			"URL": true, "Notes": true, "otp": true,
+		if known[sv.Key] {
+			continue
 		}
-		if !known[sv.Key] {
-			found := false
-			for j, dv := range dst.Values {
-				if dv.Key == sv.Key {
-					dst.Values[j].Value.Content = sv.Value.Content
-					found = true
-					break
-				}
+		found := false
+		for j, dv := range dst.Values {
+			if dv.Key == sv.Key {
+				dst.Values[j].Value.Content = sv.Value.Content
+				found = true
+				break
 			}
-			if !found {
-				dst.Values = append(dst.Values, sv)
-			}
+		}
+		if !found {
+			dst.Values = append(dst.Values, sv)
 		}
 	}
 }
@@ -163,7 +169,6 @@ func copyValue(dst, src *gokeepasslib.Entry, key string) {
 			return
 		}
 	}
-	// Key not in dst — add it.
 	v := gokeepasslib.ValueData{Key: key, Value: gokeepasslib.V{Content: sv}}
 	if key == "Password" || key == "otp" {
 		v.Value.Protected = w.NewBoolWrapper(true)
@@ -183,26 +188,23 @@ func diffEntries(current, old *gokeepasslib.Entry) []fieldChange {
 	for _, k := range keys {
 		cur := current.GetContent(k)
 		prev := old.GetContent(k)
-		if cur != prev {
-			label := strings.ToLower(k)
-			if label == "username" {
-				label = "username"
-			}
-			changes = append(changes, fieldChange{
-				field: label,
-				old:   truncateDiff(prev),
-				new:   truncateDiff(cur),
-			})
+		if cur == prev {
+			continue
 		}
+		changes = append(changes, fieldChange{
+			field: strings.ToLower(k),
+			old:   truncateDiff(prev),
+			new:   truncateDiff(cur),
+		})
 	}
 	return changes
 }
 
 func truncateDiff(s string) string {
+	if s == "" {
+		return "(empty)"
+	}
 	if len(s) <= 40 {
-		if s == "" {
-			return "(empty)"
-		}
 		return s
 	}
 	return s[:37] + "..."
