@@ -10,6 +10,17 @@ commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-27
+
+### Added
+
+- auto-detect bump from conventional commits (a6e38a5)
+
+### Fixed
+
+- anchor BREAKING CHANGE grep to start of line (745e650)
+
+
 ## [0.1.0-alpha.3] — 2026-05-27
 
 ### Fixed
@@ -123,3 +134,4 @@ until 1.0.
 [0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
 [0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.2...v0.1.0-alpha.3
+[0.2.0]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.3...v0.2.0
