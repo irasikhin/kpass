@@ -8,8 +8,6 @@ All notable changes to this project are documented here. Format based on
 [Conventional Commits](https://www.conventionalcommits.org/) — please write
 commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## [Unreleased]
-
 ## [0.2.1] — 2026-05-27
 
 ### Fixed
@@ -163,7 +161,6 @@ until 1.0.
 - Non-interactive mode via global `--yes/-y` and `--json` on mutating
   commands.
 
-[Unreleased]: https://github.com/irasikhin/kpass/compare/v0.2.0...HEAD
 [0.2.0]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.3...v0.2.0
 [0.1.0-alpha.3]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.3
 [0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
