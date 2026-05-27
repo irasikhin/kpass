@@ -123,6 +123,15 @@ The release script:
 The `release` workflow in `.github/workflows/release.yml` builds the binaries
 for each tag and publishes a GitHub Release with the changelog section.
 
+Before pushing the release tag, verify:
+
+* `git status --short` is clean.
+* `go test ./...`, `go vet ./...`, `golangci-lint run ./...`,
+  `nix flake check --no-build`, and `nix build .#kpass --no-link` pass.
+* `CHANGELOG.md` has the intended section and `nix/package.nix` matches the tag.
+* After publishing, smoke-test `go install github.com/irasikhin/kpass/cmd/kpass@latest`
+  and `nix profile install github:irasikhin/kpass`.
+
 ## Style
 
 * Run `gofmt` (your editor probably does). No imports of `goimports`-style

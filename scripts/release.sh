@@ -14,7 +14,7 @@
 #   4. Updates `version` in nix/package.nix to match the new tag.
 #   5. Commits with `chore(release): vX.Y.Z` and tags `vX.Y.Z`.
 #
-# The release.yml workflow on Gitea takes it from there:
+# The GitHub release workflow takes it from there:
 #   git push --follow-tags
 set -euo pipefail
 

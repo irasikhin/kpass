@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -55,6 +58,10 @@ jobs:
           cp README.md CHANGELOG.md LICENSE "dist/${out}/" 2>/dev/null || true
           tar -czf "dist/${out}.tar.gz" -C dist "${out}"
           (cd dist && sha256sum "${out}.tar.gz" > "${out}.tar.gz.sha256")
+          if [ "$GOOS" = "linux" ]; then
+            "dist/${out}/kpass" --version
+            "dist/${out}/kpass" --help >/dev/null
+          fi
           rm -rf "dist/${out}"
 
       - name: Upload artifacts
