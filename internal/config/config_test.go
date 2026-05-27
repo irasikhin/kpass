@@ -529,3 +529,416 @@ func TestJoin(t *testing.T) {
 		t.Errorf("strings.Join(nil) = %q", got)
 	}
 }
+
+func TestLoad_PathIsDirectory(t *testing.T) {
+	dir := t.TempDir()
+	_, _, err := Load(dir)
+	if err == nil || !strings.Contains(err.Error(), "not a file") {
+		t.Errorf("expected 'not a file' error, got %v", err)
+	}
+}
+
+func TestLoad_MalformedTOML(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, "default = \n[")
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "parse") {
+		t.Errorf("expected parse error, got %v", err)
+	}
+}
+
+func TestLoad_DefaultEmpty(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `default = ""
+
+[databases.main]
+database = "x"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "non-empty") {
+		t.Errorf("expected non-empty error, got %v", err)
+	}
+}
+
+func TestParseProfile_BadCacheTTL(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+session_ttl = "not-int"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "session_ttl") {
+		t.Errorf("expected session_ttl error, got %v", err)
+	}
+}
+
+func TestParseProfile_BadCacheTTLLegacy(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+cache_ttl = "not-int"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "session_ttl") {
+		t.Errorf("expected session_ttl error for legacy cache_ttl, got %v", err)
+	}
+}
+
+func TestParseProfile_BadNoCache(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+no_session = "yes"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "no_session") {
+		t.Errorf("expected no_session error, got %v", err)
+	}
+}
+
+func TestParseProfile_BadNoCacheLegacy(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+no_cache = "nope"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil {
+		t.Error("expected no_cache type error")
+	}
+}
+
+func TestParseProfile_NonStringField(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+password_file = 42
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "password_file") {
+		t.Errorf("expected password_file string error, got %v", err)
+	}
+}
+
+func TestParseProfile_NotATable(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases]
+main = "scalar"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil {
+		t.Error("expected error when profile is not a table")
+	}
+}
+
+func TestParseProfile_UnknownKey(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+unknown_thing = "y"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "unknown_thing") {
+		t.Errorf("expected unknown-key error, got %v", err)
+	}
+}
+
+func TestParseProfile_PartialPasswordDB(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+password_database = "other"
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "together") {
+		t.Errorf("expected together error, got %v", err)
+	}
+}
+
+func TestParseProfile_BackupKeepNegative(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+backup_keep = -1
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "backup_keep") {
+		t.Errorf("expected backup_keep error, got %v", err)
+	}
+}
+
+func TestParseProfile_BackupMaxAgeNegative(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "x"
+backup_max_age_days = -5
+`)
+	_, _, err := Load(cfgPath)
+	if err == nil || !strings.Contains(err.Error(), "backup_max_age_days") {
+		t.Errorf("expected backup_max_age_days error, got %v", err)
+	}
+}
+
+func TestResolveProfile_FetcherError(t *testing.T) {
+	fc := FileConfig{
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/main.kdbx",
+				PasswordDatabase: "other",
+				PasswordEntry:    "x",
+			},
+			"other": {Database: "/other.kdbx"},
+		},
+	}
+	fetcher := func(Config, string) (string, error) {
+		return "", os.ErrPermission
+	}
+	if _, err := ResolveProfile(fc, "main", fetcher, nil); err == nil {
+		t.Error("expected fetcher error to bubble")
+	}
+}
+
+func TestResolveProfile_FetcherEmptyPassword(t *testing.T) {
+	fc := FileConfig{
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/main.kdbx",
+				PasswordDatabase: "other",
+				PasswordEntry:    "x",
+			},
+			"other": {Database: "/other.kdbx"},
+		},
+	}
+	fetcher := func(Config, string) (string, error) { return "", nil }
+	_, err := ResolveProfile(fc, "main", fetcher, nil)
+	if err == nil || !strings.Contains(err.Error(), "does not contain a password") {
+		t.Errorf("expected empty-password error, got %v", err)
+	}
+}
+
+func TestResolveProfile_ChainedFromUnknownSource(t *testing.T) {
+	fc := FileConfig{
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/main.kdbx",
+				PasswordDatabase: "ghost",
+				PasswordEntry:    "x",
+			},
+		},
+	}
+	fetcher := func(Config, string) (string, error) { return "pw", nil }
+	if _, err := ResolveProfile(fc, "main", fetcher, nil); err == nil {
+		t.Error("expected unknown source error")
+	}
+}
+
+func TestResolveProfile_LogWritten(t *testing.T) {
+	fc := FileConfig{
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/main.kdbx",
+				PasswordDatabase: "other",
+				PasswordEntry:    "vaults/main",
+			},
+			"other": {Database: "/other.kdbx"},
+		},
+	}
+	fetcher := func(Config, string) (string, error) { return "pw", nil }
+	var log strings.Builder
+	if _, err := ResolveProfile(fc, "main", fetcher, &log); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(log.String(), "vaults/main") {
+		t.Errorf("log = %q, want lookup line", log.String())
+	}
+}
+
+func TestResolveRuntime_EnvFallbacks(t *testing.T) {
+	t.Setenv("KEEPASS_DB_PATH", "/from-env.kdbx")
+	t.Setenv("KPASS_PASSWORD_FILE", "/from-env.pw")
+	t.Setenv("KPASS_KEY_FILE", "/from-env.key")
+	t.Setenv("KPASS_SESSION_TTL", "")
+	t.Setenv("KPASS_CACHE_TTL", "")
+
+	cfg, err := ResolveRuntime(FileConfig{}, "", RuntimeFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Database != "/from-env.kdbx" {
+		t.Errorf("database = %q, want from env", cfg.Database)
+	}
+	if cfg.PasswordFile != "/from-env.pw" {
+		t.Errorf("password_file = %q", cfg.PasswordFile)
+	}
+	if cfg.KeyFile != "/from-env.key" {
+		t.Errorf("key_file = %q", cfg.KeyFile)
+	}
+	if cfg.CacheTTL != DefaultCacheTTL {
+		t.Errorf("ttl = %d, want %d", cfg.CacheTTL, DefaultCacheTTL)
+	}
+}
+
+func TestResolveRuntime_EnvCacheTTL(t *testing.T) {
+	t.Setenv("KPASS_SESSION_TTL", "777")
+	cfg, err := ResolveRuntime(FileConfig{}, "", RuntimeFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.CacheTTL != 777 {
+		t.Errorf("ttl = %d, want 777", cfg.CacheTTL)
+	}
+}
+
+func TestResolveRuntime_EnvCacheTTLInvalid(t *testing.T) {
+	t.Setenv("KPASS_SESSION_TTL", "nope")
+	if _, err := ResolveRuntime(FileConfig{}, "", RuntimeFlags{}, nil, nil); err == nil {
+		t.Error("expected invalid TTL error")
+	}
+}
+
+func TestResolveRuntime_FlagCacheTTLOverridesEnv(t *testing.T) {
+	t.Setenv("KPASS_SESSION_TTL", "777")
+	five := 5
+	cfg, err := ResolveRuntime(FileConfig{}, "", RuntimeFlags{CacheTTL: &five}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.CacheTTL != 5 {
+		t.Errorf("flag TTL should win, got %d", cfg.CacheTTL)
+	}
+}
+
+func TestResolveRuntime_ProfileDefaults(t *testing.T) {
+	ttl := 60
+	yes := true
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/from-profile.kdbx",
+				PasswordFile:     "/from-profile.pw",
+				KeyFile:          "/from-profile.key",
+				CacheTTL:         &ttl,
+				NoCache:          &yes,
+				BackupKeep:       4,
+				BackupMaxAgeDays: 7,
+			},
+		},
+	}
+	t.Setenv("KEEPASS_DB_PATH", "")
+	t.Setenv("KPASS_PASSWORD_FILE", "")
+	t.Setenv("KPASS_KEY_FILE", "")
+	t.Setenv("KPASS_SESSION_TTL", "")
+	t.Setenv("KPASS_CACHE_TTL", "")
+
+	cfg, err := ResolveRuntime(fc, "", RuntimeFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Database != "/from-profile.kdbx" || cfg.PasswordFile != "/from-profile.pw" || cfg.KeyFile != "/from-profile.key" {
+		t.Errorf("profile defaults not applied: %+v", cfg)
+	}
+	if cfg.CacheTTL != 60 || !cfg.NoCache {
+		t.Errorf("profile cache settings: ttl=%d, no_cache=%t", cfg.CacheTTL, cfg.NoCache)
+	}
+	if cfg.BackupKeep != 4 || cfg.BackupMaxAgeDays != 7 {
+		t.Errorf("backup defaults: keep=%d, age=%d", cfg.BackupKeep, cfg.BackupMaxAgeDays)
+	}
+}
+
+func TestResolveRuntime_FlagNoCacheOverridesProfile(t *testing.T) {
+	yes := true
+	no := false
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {Database: "/x.kdbx", NoCache: &yes},
+		},
+	}
+	cfg, err := ResolveRuntime(fc, "", RuntimeFlags{NoCache: &no}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.NoCache {
+		t.Error("flag false should override profile true")
+	}
+}
+
+func TestResolveRuntime_UnknownSelector(t *testing.T) {
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {Database: "/x.kdbx"},
+		},
+	}
+	if _, err := ResolveRuntime(fc, "ghost", RuntimeFlags{}, nil, nil); err == nil {
+		t.Error("expected unknown selector error")
+	}
+}
+
+func TestResolveRuntime_ResolveProfileErrorPropagates(t *testing.T) {
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {
+				Database:         "/main.kdbx",
+				PasswordDatabase: "other",
+				PasswordEntry:    "x",
+			},
+			"other": {Database: "/other.kdbx"},
+		},
+	}
+	// nil fetcher with chained profile → resolveProfile returns "no fetcher" error.
+	if _, err := ResolveRuntime(fc, "", RuntimeFlags{}, nil, nil); err == nil {
+		t.Error("expected chained-resolve error to propagate")
+	}
+}
+
+func TestReadPasswordFile_Directory(t *testing.T) {
+	dir := t.TempDir()
+	if _, err := ReadPasswordFile(dir); err == nil {
+		t.Error("expected error for directory")
+	}
+}
