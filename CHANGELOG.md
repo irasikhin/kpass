@@ -8,6 +8,28 @@ All notable changes to this project are documented here. Format based on
 [Conventional Commits](https://www.conventionalcommits.org/) — please write
 commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+## [0.3.2] — 2026-05-27
+
+### Docs
+
+- drop model version numbers from vibe-coded line (d074e03)
+
+### Tests
+
+- cover Init detect() via test seam (aed51a1)
+- cover ExpandPath no-HOME and default stdinFd (977e5f8)
+- cover Suffix indicator, min-width defaults, and truncate (afa653b)
+- drop dead Charset branches, cover rand errors and labels (21890cb)
+- cover SHA512, invalid period, wall-time fallback, Parse propagation (d4a751f)
+- seam tempfile FS calls, drop Close-error branch (e254f2c)
+- cover FS error branches via filepathAbs/marshal/remove seams (2c41d2e)
+- seam Backend(), cover default exec lambdas and Process.Release (9e5a8dc)
+- cover Stat permission error, ReadFile error, MkdirAll error (ae1ce12)
+- introduce FS/library seams, drive package to 100% (8666fcb)
+- cover default runCmdFn lambda body (8aa44c3)
+- add OpenStartHook seam and ~30 command tests (e5dca9e)
+
+
 ## [0.3.1] — 2026-05-27
 
 ### Tests
@@ -211,3 +233,4 @@ until 1.0.
 [0.2.1]: https://github.com/irasikhin/kpass/compare/v0.2.0...v0.2.1
 [0.3.0]: https://github.com/irasikhin/kpass/compare/v0.2.1...v0.3.0
 [0.3.1]: https://github.com/irasikhin/kpass/compare/v0.3.0...v0.3.1
+[0.3.2]: https://github.com/irasikhin/kpass/compare/v0.3.1...v0.3.2
