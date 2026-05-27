@@ -153,11 +153,11 @@ func (d *DB) importEntry(src *Entry, destinationPath string) *Entry {
 // replaceEntryData mirrors Python replace_entry_data: copy core fields and
 // custom values, replace tags, custom properties, and attachments.
 func (d *DB) replaceEntryData(target, source *Entry) {
-	entrySet(target.e, "UserName", source.e.GetContent("UserName"), false)
-	entrySet(target.e, "Password", source.e.GetPassword(), true)
-	entrySet(target.e, "URL", source.e.GetContent("URL"), false)
-	entrySet(target.e, "Notes", source.e.GetContent("Notes"), false)
-	entrySet(target.e, "otp", source.e.GetContent("otp"), true)
+	entrySet(target.e, "UserName", source.e.GetContent("UserName"))
+	entrySet(target.e, "Password", source.e.GetPassword())
+	entrySet(target.e, "URL", source.e.GetContent("URL"))
+	entrySet(target.e, "Notes", source.e.GetContent("Notes"))
+	entrySet(target.e, "otp", source.e.GetContent("otp"))
 	target.e.Tags = source.e.Tags
 
 	// Replace custom properties (any key not in the standard set).
@@ -203,7 +203,7 @@ func cloneRawEntry(src *gokeepasslib.Entry, title string) gokeepasslib.Entry {
 	// Reset Histories on import — pykeepass creates new entries without
 	// inherited history.
 	out.Histories = nil
-	entrySet(&out, "Title", title, false)
+	entrySet(&out, "Title", title)
 	// Preserve Binaries slice length so caller can index into it.
 	out.Binaries = append(out.Binaries[:0:0], src.Binaries...)
 	return out

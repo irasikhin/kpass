@@ -61,13 +61,20 @@ func (g *Group) Name() string {
 	return g.Path[len(g.Path)-1]
 }
 
-func entrySet(e *gokeepasslib.Entry, key, value string, protected bool) {
+// protectedFields names the canonical keys that KeePass stores with the
+// Protected attribute. Custom keys default to non-protected.
+var protectedFields = map[string]bool{
+	"Password": true,
+	"otp":      true,
+}
+
+func entrySet(e *gokeepasslib.Entry, key, value string) {
 	if i := e.GetIndex(key); i >= 0 {
 		e.Values[i].Value.Content = value
 		return
 	}
 	v := gokeepasslib.ValueData{Key: key, Value: gokeepasslib.V{Content: value}}
-	if protected {
+	if protectedFields[key] {
 		v.Value.Protected = w.NewBoolWrapper(true)
 	}
 	e.Values = append(e.Values, v)

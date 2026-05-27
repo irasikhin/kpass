@@ -113,7 +113,7 @@ func (e *Entry) OtpURI() string {
 func (e *Entry) SetField(name, value string) {
 	switch strings.ToLower(name) {
 	case "title":
-		entrySet(e.e, "Title", value, false)
+		entrySet(e.e, "Title", value)
 		if len(e.Path) > 0 {
 			e.Path[len(e.Path)-1] = value
 		} else {
@@ -121,23 +121,23 @@ func (e *Entry) SetField(name, value string) {
 		}
 		return
 	case "username":
-		entrySet(e.e, "UserName", value, false)
+		entrySet(e.e, "UserName", value)
 		return
 	case "password":
-		entrySet(e.e, "Password", value, true)
+		entrySet(e.e, "Password", value)
 		return
 	case "url":
-		entrySet(e.e, "URL", value, false)
+		entrySet(e.e, "URL", value)
 		return
 	case "notes":
-		entrySet(e.e, "Notes", value, false)
+		entrySet(e.e, "Notes", value)
 		return
 	case "otp":
-		entrySet(e.e, "otp", value, true)
+		entrySet(e.e, "otp", value)
 		return
 	}
 	// Custom field — store with original key name.
-	entrySet(e.e, name, value, false)
+	entrySet(e.e, name, value)
 }
 
 // CustomFields returns all non-standard key-value pairs on the entry.

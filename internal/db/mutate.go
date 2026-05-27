@@ -40,17 +40,17 @@ func (d *DB) EnsureGroup(path string) *Group {
 // when force=true).
 func (d *DB) CreateEntry(parent *Group, title, username, password, url, notes, otp string) *Entry {
 	e := gokeepasslib.NewEntry()
-	entrySet(&e, "Title", title, false)
-	entrySet(&e, "UserName", username, false)
-	entrySet(&e, "Password", password, true)
+	entrySet(&e, "Title", title)
+	entrySet(&e, "UserName", username)
+	entrySet(&e, "Password", password)
 	if url != "" {
-		entrySet(&e, "URL", url, false)
+		entrySet(&e, "URL", url)
 	}
 	if notes != "" {
-		entrySet(&e, "Notes", notes, false)
+		entrySet(&e, "Notes", notes)
 	}
 	if otp != "" {
-		entrySet(&e, "otp", otp, true)
+		entrySet(&e, "otp", otp)
 	}
 	parent.g.Entries = append(parent.g.Entries, e)
 	ref := &parent.g.Entries[len(parent.g.Entries)-1]
@@ -70,28 +70,28 @@ func (d *DB) ApplyFields(e *Entry, username, url, notes, otp *string, replaceMis
 		if username != nil {
 			val = *username
 		}
-		entrySet(e.e, "UserName", val, false)
+		entrySet(e.e, "UserName", val)
 	}
 	if replaceMissing || url != nil {
 		val := ""
 		if url != nil {
 			val = *url
 		}
-		entrySet(e.e, "URL", val, false)
+		entrySet(e.e, "URL", val)
 	}
 	if replaceMissing || notes != nil {
 		val := ""
 		if notes != nil {
 			val = *notes
 		}
-		entrySet(e.e, "Notes", val, false)
+		entrySet(e.e, "Notes", val)
 	}
 	if replaceMissing || otp != nil {
 		val := ""
 		if otp != nil {
 			val = *otp
 		}
-		entrySet(e.e, "otp", val, true)
+		entrySet(e.e, "otp", val)
 	}
 }
 
@@ -127,7 +127,7 @@ func (d *DB) MoveEntry(e *Entry, dst *Group) (*Entry, error) {
 
 // SetTitle sets the entry's title and updates the cached path.
 func (e *Entry) SetTitle(title string) {
-	entrySet(e.e, "Title", title, false)
+	entrySet(e.e, "Title", title)
 	if len(e.Path) == 0 {
 		e.Path = []string{title}
 	} else {
@@ -139,7 +139,7 @@ func (e *Entry) SetTitle(title string) {
 // title. Custom properties, attachments, and tags are preserved.
 func (d *DB) CloneEntry(src *Entry, dst *Group, title string) *Entry {
 	cloned := src.e.Clone()
-	entrySet(&cloned, "Title", title, false)
+	entrySet(&cloned, "Title", title)
 	dst.g.Entries = append(dst.g.Entries, cloned)
 	ref := &dst.g.Entries[len(dst.g.Entries)-1]
 	return &Entry{
