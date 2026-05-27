@@ -9,6 +9,7 @@ import (
 	"unicode"
 
 	"github.com/irasikhin/kpass/internal/color"
+	"github.com/irasikhin/kpass/internal/db"
 )
 
 // AuditCmd checks the database for security issues.
@@ -28,19 +29,29 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 	if err := c.openDatabase(); err != nil {
 		return err
 	}
-
 	entries := c.db.SortedEntries()
-	var issues []auditIssue
+	issues := collectAuditIssues(entries)
+	return cmd.renderAudit(c, issues)
+}
 
-	// --- Weak passwords ---
+func collectAuditIssues(entries []*db.Entry) []auditIssue {
+	var issues []auditIssue
+	issues = append(issues, weakPasswordIssues(entries)...)
+	issues = append(issues, reusedPasswordIssues(entries)...)
+	issues = append(issues, missingFieldIssues(entries)...)
+	issues = append(issues, duplicateOtpIssues(entries)...)
+	return issues
+}
+
+func weakPasswordIssues(entries []*db.Entry) []auditIssue {
+	var out []auditIssue
 	for _, e := range entries {
 		pw := e.Raw().GetPassword()
 		if pw == "" {
 			continue
 		}
-		reason := weakPasswordReason(pw)
-		if reason != "" {
-			issues = append(issues, auditIssue{
+		if reason := weakPasswordReason(pw); reason != "" {
+			out = append(out, auditIssue{
 				Entry:  e.DisplayPath(),
 				Kind:   "weak_password",
 				Detail: reason,
@@ -48,11 +59,12 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 			})
 		}
 	}
+	return out
+}
 
-	// --- Reused passwords ---
+func reusedPasswordIssues(entries []*db.Entry) []auditIssue {
 	// Group by SHA-256 hash to avoid holding plaintext passwords in a map.
 	type pwGroup struct {
-		hash    string
 		plain   string // kept only for collision verification
 		entries []string
 	}
@@ -65,17 +77,17 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 		h := sha256.Sum256([]byte(pw))
 		key := hex.EncodeToString(h[:])
 		if g, ok := groupsByHash[key]; ok {
-			// Verify collision is real (same password), not a hash collision.
 			if g.plain == pw {
 				g.entries = append(g.entries, e.DisplayPath())
 			}
 		} else {
-			groupsByHash[key] = &pwGroup{hash: key, plain: pw, entries: []string{e.DisplayPath()}}
+			groupsByHash[key] = &pwGroup{plain: pw, entries: []string{e.DisplayPath()}}
 		}
 	}
+	var out []auditIssue
 	for _, g := range groupsByHash {
 		if len(g.entries) > 1 {
-			issues = append(issues, auditIssue{
+			out = append(out, auditIssue{
 				Entry:  strings.Join(g.entries, ", "),
 				Kind:   "reused_password",
 				Detail: fmt.Sprintf("Same password used by %d entries", len(g.entries)),
@@ -83,11 +95,14 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 			})
 		}
 	}
+	return out
+}
 
-	// --- Missing fields ---
+func missingFieldIssues(entries []*db.Entry) []auditIssue {
+	var out []auditIssue
 	for _, e := range entries {
 		if e.Raw().GetContent("UserName") == "" {
-			issues = append(issues, auditIssue{
+			out = append(out, auditIssue{
 				Entry:  e.DisplayPath(),
 				Kind:   "missing_field",
 				Detail: "Username is empty",
@@ -95,7 +110,7 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 			})
 		}
 		if e.Raw().GetContent("URL") == "" {
-			issues = append(issues, auditIssue{
+			out = append(out, auditIssue{
 				Entry:  e.DisplayPath(),
 				Kind:   "missing_field",
 				Detail: "URL is empty",
@@ -103,8 +118,10 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 			})
 		}
 	}
+	return out
+}
 
-	// --- Duplicate OTP seeds ---
+func duplicateOtpIssues(entries []*db.Entry) []auditIssue {
 	otps := map[string][]string{}
 	for _, e := range entries {
 		otp := e.OtpURI()
@@ -113,9 +130,10 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 		}
 		otps[otp] = append(otps[otp], e.DisplayPath())
 	}
+	var out []auditIssue
 	for _, paths := range otps {
 		if len(paths) > 1 {
-			issues = append(issues, auditIssue{
+			out = append(out, auditIssue{
 				Entry:  strings.Join(paths, ", "),
 				Kind:   "duplicate_otp",
 				Detail: fmt.Sprintf("Same TOTP seed used by %d entries", len(paths)),
@@ -123,19 +141,19 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 			})
 		}
 	}
+	return out
+}
 
-	// --- Output ---
+func (cmd *AuditCmd) renderAudit(c *ctx, issues []auditIssue) error {
 	if cmd.JSON {
 		fmt.Fprintln(c.out, auditJSON(issues))
 		return nil
 	}
-
 	if len(issues) == 0 {
 		fmt.Fprintln(c.out, color.Green("Audit: no issues found"))
 		return nil
 	}
 
-	// Group by kind.
 	kinds := []string{"weak_password", "reused_password", "missing_field", "duplicate_otp"}
 	kindLabels := map[string]string{
 		"weak_password":   "Weak passwords",
@@ -154,18 +172,13 @@ func (cmd *AuditCmd) Run(c *ctx) error {
 		if cnt == 0 {
 			continue
 		}
-		label := kindLabels[kind]
-		if cnt > 0 {
-			label = color.Yellow(label)
-		}
-		fmt.Fprintf(c.out, "\n%s (%d):\n", label, cnt)
+		fmt.Fprintf(c.out, "\n%s (%d):\n", color.Yellow(kindLabels[kind]), cnt)
 		for _, iss := range issues {
 			if iss.Kind != kind {
 				continue
 			}
 			entryPart := color.Bold(iss.Entry)
 			if kind == "reused_password" || kind == "duplicate_otp" {
-				// Multiple entries — join them colored.
 				parts := strings.Split(iss.Entry, ", ")
 				colored := make([]string, len(parts))
 				for i, p := range parts {
@@ -219,8 +232,7 @@ func weakPasswordReason(pw string) string {
 
 // isCommonPassword checks against a small list of the most common passwords.
 func isCommonPassword(pw string) bool {
-	lower := strings.ToLower(pw)
-	_, ok := commonPasswords[lower]
+	_, ok := commonPasswords[strings.ToLower(pw)]
 	return ok
 }
 
