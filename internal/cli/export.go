@@ -73,11 +73,14 @@ func (cmd *ExportCmd) Run(c *ctx) error {
 			return &UserError{Msg: fmt.Sprintf("Output file already exists: %s. Use --force to overwrite.", outputPath)}
 		}
 		var err error
-		f, err = os.Create(outputPath)
+		f, err = os.OpenFile(outputPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err != nil {
 			return &UserError{Msg: err.Error()}
 		}
 		defer f.Close()
+		if err := f.Chmod(0o600); err != nil {
+			return &UserError{Msg: err.Error()}
+		}
 		out = f
 	}
 

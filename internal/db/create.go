@@ -50,7 +50,7 @@ func Create(path, password, keyFile string) error {
 	root := db.Content.Root.Groups[0]
 	root.Name = rootName
 
-	f, err := os.Create(expanded)
+	f, err := os.OpenFile(expanded, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
 	if err != nil {
 		return fmt.Errorf("cannot create database file: %w", err)
 	}

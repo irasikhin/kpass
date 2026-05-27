@@ -35,6 +35,10 @@ func (d *DB) Save() error {
 		return err
 	}
 	tmpPath := tmp.Name()
+	if err := tmp.Chmod(0o600); err != nil {
+		_ = tmp.Close()
+		return err
+	}
 	defer func() {
 		if tmpPath != "" {
 			_ = os.Remove(tmpPath)
@@ -72,7 +76,7 @@ func (d *DB) Backup() (string, error) {
 	}
 	defer src.Close()
 
-	dst, err := os.Create(backupPath)
+	dst, err := os.OpenFile(backupPath, os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0o600)
 	if err != nil {
 		return "", err
 	}
@@ -106,11 +110,14 @@ func RestoreBackup(backupPath, dbPath string) error {
 	}
 	defer src.Close()
 
-	dst, err := os.Create(dbPath)
+	dst, err := os.OpenFile(dbPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return fmt.Errorf("cannot write database: %w", err)
 	}
 	defer dst.Close()
+	if err := dst.Chmod(0o600); err != nil {
+		return fmt.Errorf("cannot set database permissions: %w", err)
+	}
 
 	if _, err := io.Copy(dst, src); err != nil {
 		return err
