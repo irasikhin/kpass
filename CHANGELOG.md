@@ -8,6 +8,30 @@ All notable changes to this project are documented here. Format based on
 [Conventional Commits](https://www.conventionalcommits.org/) — please write
 commit messages with that in mind. See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+## [0.3.0] — 2026-05-27
+
+### Breaking
+
+- The legacy top-level `default_database` config key is removed; use
+  `default` instead. Configs that still use the old key now fail at
+  load with an "unsupported KPass config key" error. (8f8eba3)
+
+### Added
+
+- `scripts/release.sh` now applies 0.x semver semantics: breaking
+  changes (`type!:`, `BREAKING CHANGE:`) bump minor instead of major
+  while the project stays in 0.x. (cd40a1e)
+
+### Refactored
+
+- drop legacy default_database top-level key (8f8eba3)
+
+### Docs
+
+- drop [Unreleased] section from CHANGELOG (a2084c9)
+- add docs/CONFIG.md - full config reference and worked examples (53862dc)
+
+
 ## [0.2.1] — 2026-05-27
 
 ### Fixed
@@ -166,3 +190,4 @@ until 1.0.
 [0.1.0-alpha.2]: https://github.com/irasikhin/kpass/compare/v0.1.0-alpha.1...v0.1.0-alpha.2
 [0.1.0-alpha.1]: https://github.com/irasikhin/kpass/releases/tag/v0.1.0-alpha.1
 [0.2.1]: https://github.com/irasikhin/kpass/compare/v0.2.0...v0.2.1
+[0.3.0]: https://github.com/irasikhin/kpass/compare/v0.2.1...v0.3.0
