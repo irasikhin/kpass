@@ -188,6 +188,19 @@ type errReader struct{}
 
 func (errReader) Read([]byte) (int, error) { return 0, errors.New("read fail") }
 
+func TestPromptSecret_DefaultStdinFd(t *testing.T) {
+	resetStdio(t)
+	// Don't override stdinFdFn — exercise the default lambda that reads os.Stdin.Fd().
+	called := false
+	isTerminalFn = func(fd int) bool { called = true; _ = fd; return false }
+	if _, err := PromptSecret("X: ", false); err == nil {
+		t.Fatal("expected not-a-terminal error")
+	}
+	if !called {
+		t.Error("isTerminalFn was not invoked through default stdinFdFn")
+	}
+}
+
 func TestReadSecretFromStdin_ReaderError(t *testing.T) {
 	resetStdio(t)
 	if _, err := ReadSecretFromStdin(errReader{}); err == nil {

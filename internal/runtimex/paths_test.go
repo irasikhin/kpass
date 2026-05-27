@@ -102,6 +102,16 @@ func TestRoundtrip(t *testing.T) {
 	}
 }
 
+func TestExpandPathNoHome(t *testing.T) {
+	t.Setenv("HOME", "")
+	if got := ExpandPath("~"); got != "~" {
+		t.Errorf("ExpandPath(~) without HOME = %q, want %q", got, "~")
+	}
+	if got := ExpandPath("~/foo"); got != "~/foo" {
+		t.Errorf("ExpandPath(~/foo) without HOME = %q, want %q", got, "~/foo")
+	}
+}
+
 func TestConfigFilePath(t *testing.T) {
 	t.Setenv("KPASS_CONFIG", "")
 	got := ConfigFilePath("")
