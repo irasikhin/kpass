@@ -1018,7 +1018,10 @@ func TestUndo_PruneNothing(t *testing.T) {
 }
 
 func TestFormatSize(t *testing.T) {
-	cases := []struct{ in int64; want string }{
+	cases := []struct {
+		in   int64
+		want string
+	}{
 		{42, "42 B"},
 		{2048, "2.0 KiB"},
 		{2 * 1024 * 1024, "2.0 MiB"},

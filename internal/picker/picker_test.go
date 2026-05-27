@@ -190,10 +190,6 @@ func TestPick_DefaultRunFnBody(t *testing.T) {
 	if err == nil {
 		t.Error("expected error from missing binary")
 	}
-	_ = io.Discard
-	_ = errors.New
-	_ = exec.ErrNotFound
-	_ = strings.TrimSpace
 }
 
 func TestPick_EmptySelection(t *testing.T) {

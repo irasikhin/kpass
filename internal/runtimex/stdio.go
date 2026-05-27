@@ -19,9 +19,9 @@ var ReadStdinHook func(in io.Reader) (string, error)
 
 // Seams for term/stdio I/O so unit tests can avoid a real TTY.
 var (
-	stdinFdFn      = func() int { return int(os.Stdin.Fd()) }
-	isTerminalFn   = term.IsTerminal
-	readPasswordFn = term.ReadPassword
+	stdinFdFn                = func() int { return int(os.Stdin.Fd()) }
+	isTerminalFn             = term.IsTerminal
+	readPasswordFn           = term.ReadPassword
 	promptWriter   io.Writer = os.Stderr
 )
 

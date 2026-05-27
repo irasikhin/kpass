@@ -62,10 +62,10 @@ func TestAssess_NoClassifiableChars(t *testing.T) {
 
 func TestAssess_AllLabels(t *testing.T) {
 	cases := []struct{ pw, want string }{
-		{"a", "Very Weak"},                // ~4.7 bits
-		{"abcdef", "Weak"},                // 6 lowercase ≈ 28.2 bits
-		{"abcdefgh", "Fair"},              // 8 lowercase ≈ 37.6 bits
-		{"aB3$xY9!kL", "Strong"},          // 10 chars mixed ≈ 65 bits
+		{"a", "Very Weak"},                  // ~4.7 bits
+		{"abcdef", "Weak"},                  // 6 lowercase ≈ 28.2 bits
+		{"abcdefgh", "Fair"},                // 8 lowercase ≈ 37.6 bits
+		{"aB3$xY9!kL", "Strong"},            // 10 chars mixed ≈ 65 bits
 		{"aB3$xY9!kL2@mN5#", "Very Strong"}, // 16 chars mixed ≈ 105 bits
 	}
 	for _, c := range cases {

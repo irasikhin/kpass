@@ -318,7 +318,6 @@ func TestOpen_PromptFlow(t *testing.T) {
 	}
 }
 
-
 func TestOpen_CachedSucceeds(t *testing.T) {
 	resetSeams(t)
 	d := seedDB(t)
@@ -326,7 +325,7 @@ func TestOpen_CachedSucceeds(t *testing.T) {
 	tmpRuntime := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", tmpRuntime)
 	// Seed cache with the correct password.
-	if err := cacheStore(path, "", "pw", 60); err != nil {
+	if err := cache.Store(path, "", "pw", 60); err != nil {
 		t.Fatal(err)
 	}
 	loaded, err := Open(config.Config{Database: path, CacheTTL: 60})
@@ -345,7 +344,7 @@ func TestOpen_CachedWrongPasswordClearsAndPrompts(t *testing.T) {
 	tmpRuntime := t.TempDir()
 	t.Setenv("XDG_RUNTIME_DIR", tmpRuntime)
 	// Seed cache with wrong password.
-	if err := cacheStore(path, "", "wrong-pw", 60); err != nil {
+	if err := cache.Store(path, "", "wrong-pw", 60); err != nil {
 		t.Fatal(err)
 	}
 	prompted := false
@@ -551,9 +550,10 @@ func TestSave_CloseError(t *testing.T) {
 	}
 }
 
-// buildSrcWithBadBinary returns a source DB whose entry has both a non-existent
-// binary ref AND a binary whose content fails GetContentBytes (bad gzip).
-func buildSrcWithBadBinary(t *testing.T) (*DB, *Entry) {
+// buildSrcWithBadBinary returns a source entry whose database has both a
+// non-existent binary ref AND a binary whose content fails GetContentBytes
+// (bad gzip).
+func buildSrcWithBadBinary(t *testing.T) *Entry {
 	t.Helper()
 	src := &DB{Raw: gokeepasslib.NewDatabase(gokeepasslib.WithDatabaseKDBXVersion4())}
 	src.Raw.Credentials = gokeepasslib.NewPasswordCredentials("pw")
@@ -587,17 +587,17 @@ func buildSrcWithBadBinary(t *testing.T) (*DB, *Entry) {
 	if srcEntry == nil {
 		t.Fatal("source entry not found via SortedEntries")
 	}
-	return src, srcEntry
+	return srcEntry
 }
 
 func TestImportEntry_SkipsMissingAndUnreadableBinaries(t *testing.T) {
-	_, srcEntry := buildSrcWithBadBinary(t)
+	srcEntry := buildSrcWithBadBinary(t)
 	target := seedDB(t)
 	target.importEntry(srcEntry, "imported/item")
 }
 
 func TestReplaceEntryData_BinaryAndStandardBranches(t *testing.T) {
-	_, srcEntry := buildSrcWithBadBinary(t)
+	srcEntry := buildSrcWithBadBinary(t)
 	target := seedDB(t)
 	tgt := target.FindEntryByExactPath("work/email")
 	if tgt == nil {
@@ -618,9 +618,4 @@ func TestReplaceEntryData_BinaryAndStandardBranches(t *testing.T) {
 	if !foundPin {
 		t.Error("custom Pin value should be appended via the non-standard branch")
 	}
-}
-
-// cacheStore is a tiny helper around the public cache.Store.
-func cacheStore(database, keyFile, password string, ttl int) error {
-	return cache.Store(database, keyFile, password, ttl)
 }

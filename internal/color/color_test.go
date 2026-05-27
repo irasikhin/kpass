@@ -128,7 +128,9 @@ func TestDetectNoColor(t *testing.T) {
 
 func TestDetectTerminal(t *testing.T) {
 	t.Setenv("NO_COLOR", "")
-	os.Unsetenv("NO_COLOR")
+	if err := os.Unsetenv("NO_COLOR"); err != nil {
+		t.Fatal(err)
+	}
 	prev := isTerminal
 	t.Cleanup(func() { isTerminal = prev })
 
