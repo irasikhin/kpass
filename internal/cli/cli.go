@@ -71,6 +71,12 @@ func Run(argv []string, in io.Reader, out, errw io.Writer) int {
 	// Detect terminal and NO_COLOR before anything prints.
 	color.Init()
 
+	// Hidden child-process branch for clipboard auto-clear. Never goes
+	// through kong because we don't want it to surface in --help.
+	if len(argv) > 0 && argv[0] == "__clear-clipboard" {
+		return runClearClipboard(argv)
+	}
+
 	c := &ctx{in: in, out: out, errw: errw}
 	if err := runOnce(c, argv); err != nil {
 		if errors.Is(err, context.Canceled) {

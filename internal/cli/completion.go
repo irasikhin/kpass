@@ -147,7 +147,7 @@ func WriteEntryCache(profile string, paths []string) error {
 		}
 		return '_'
 	}, profile)
-	f, err := os.Create(filepath.Join(dir, safe+".paths"))
+	f, err := os.OpenFile(filepath.Join(dir, safe+".paths"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err
 	}

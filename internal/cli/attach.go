@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/irasikhin/kpass/internal/color"
 	"github.com/irasikhin/kpass/internal/config"
@@ -120,6 +121,11 @@ func (cmd *AttachExtractCmd) Run(c *ctx) error {
 	data, err := entry.AttachmentContent(cmd.Filename)
 	if err != nil {
 		return &UserError{Msg: err.Error()}
+	}
+	// Refuse attachment names containing path separators or ".." so a
+	// crafted .kdbx cannot write outside the requested output directory.
+	if cmd.Filename != filepath.Base(cmd.Filename) || cmd.Filename == ".." || strings.ContainsRune(cmd.Filename, os.PathSeparator) {
+		return &UserError{Msg: fmt.Sprintf("Attachment name contains path separators, refusing to write: %s", cmd.Filename)}
 	}
 	outputPath := cmd.Filename
 	if cmd.Output != "" {

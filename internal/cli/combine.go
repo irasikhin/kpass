@@ -110,7 +110,9 @@ func (cmd *CombineCmd) Run(c *ctx) error {
 		}
 	}
 
-	applyCombinePlan(dst, plan)
+	if err := applyCombinePlan(dst, plan); err != nil {
+		return &UserError{Msg: err.Error()}
+	}
 	if cmd.DeleteSrc {
 		if err := c.db.DeleteEntry(src); err != nil {
 			return &UserError{Msg: err.Error()}
@@ -356,7 +358,7 @@ func resolveConflict(c *ctx, reader *bufio.Reader, kind, name, srcVal, dstVal, p
 
 // --- application ------------------------------------------------------------
 
-func applyCombinePlan(dst *db.Entry, plan *combinePlan) {
+func applyCombinePlan(dst *db.Entry, plan *combinePlan) error {
 	for _, it := range plan.Items {
 		switch it.Kind {
 		case "field":
@@ -374,13 +376,17 @@ func applyCombinePlan(dst *db.Entry, plan *combinePlan) {
 				dst.SetField(it.Name+".alt", it.SrcVal)
 			}
 		case "attachment":
+			var err error
 			switch it.Action {
 			case actionAdopt:
-				_ = dst.AddAttachment(it.Name, it.Data, false)
+				err = dst.AddAttachment(it.Name, it.Data, false)
 			case actionOverwrite:
-				_ = dst.AddAttachment(it.Name, it.Data, true)
+				err = dst.AddAttachment(it.Name, it.Data, true)
 			case actionBoth:
-				_ = dst.AddAttachment(altAttachmentName(it.Name), it.Data, true)
+				err = dst.AddAttachment(altAttachmentName(it.Name), it.Data, true)
+			}
+			if err != nil {
+				return fmt.Errorf("combine: attach %s: %w", it.Name, err)
 			}
 		}
 	}
@@ -389,6 +395,7 @@ func applyCombinePlan(dst *db.Entry, plan *combinePlan) {
 		merged = append(merged, plan.Tags...)
 		dst.SetTags(merged)
 	}
+	return nil
 }
 
 // lossySrcFields lists src field names whose non-empty values would silently

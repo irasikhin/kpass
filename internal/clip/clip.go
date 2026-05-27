@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 )
 
 // Backend reports which clipboard tool is available, or an error with
@@ -59,9 +58,11 @@ func Write(value string) error {
 		cmd.Stdin = strings.NewReader(value)
 		return cmd.Run()
 	case "mac":
-		esc := strings.ReplaceAll(value, `\`, `\\`)
-		esc = strings.ReplaceAll(esc, `"`, `\"`)
-		return exec.Command("osascript", "-e", fmt.Sprintf(`set the clipboard to "%s"`, esc)).Run()
+		// pbcopy reads from stdin verbatim — no escaping pitfalls like the
+		// AppleScript literal had (newlines, quotes, control chars).
+		cmd := exec.Command("pbcopy")
+		cmd.Stdin = strings.NewReader(value)
+		return cmd.Run()
 	}
 	return fmt.Errorf("unsupported backend: %s", b)
 }
@@ -82,8 +83,8 @@ func Read() (string, error) {
 		out, err := exec.Command("wl-paste", "--no-newline").Output()
 		return string(out), err
 	case "mac":
-		out, err := exec.Command("osascript", "-e", "the clipboard").Output()
-		return strings.TrimSpace(string(out)), err
+		out, err := exec.Command("pbpaste").Output()
+		return string(out), err
 	}
 	return "", fmt.Errorf("unsupported backend: %s", b)
 }
@@ -104,11 +105,24 @@ func Clear() error {
 	case "wl":
 		return exec.Command("wl-copy", "--clear").Run()
 	case "mac":
-		return exec.Command("osascript", "-e", `set the clipboard to ""`).Run()
+		cmd := exec.Command("pbcopy")
+		cmd.Stdin = strings.NewReader("")
+		return cmd.Run()
 	}
 	return fmt.Errorf("unsupported backend: %s", b)
 }
 
+// WriteWithAutoClear copies value to the clipboard and, if timeout > 0,
+// spawns a detached child process that sleeps `timeout` seconds and then
+// clears the clipboard if it still holds value. The child is the kpass
+// binary itself invoked as `kpass __clear-clipboard <timeout>` with the
+// secret piped on stdin; the parent does not wait, so the kpass copy
+// command returns immediately.
+//
+// Detaching matters: a goroutine in the parent would die when the parent
+// exits (which it does almost immediately after kpass copy). The argv
+// carries only the timeout — never the secret — so the secret is not
+// visible in /proc/PID/cmdline.
 func WriteWithAutoClear(value string, timeout int) error {
 	if err := Write(value); err != nil {
 		return err
@@ -116,12 +130,18 @@ func WriteWithAutoClear(value string, timeout int) error {
 	if timeout <= 0 {
 		return nil
 	}
-	go func() {
-		time.Sleep(time.Duration(timeout) * time.Second)
-		current, _ := Read()
-		if current == value {
-			_ = Clear()
-		}
-	}()
+	self, err := os.Executable()
+	if err != nil {
+		return nil //nolint:nilerr // best-effort: clipboard write succeeded
+	}
+	cmd := exec.Command(self, "__clear-clipboard", fmt.Sprintf("%d", timeout))
+	cmd.Stdin = strings.NewReader(value)
+	// Detach: no inherited stdout/stderr; parent will not wait.
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Start(); err != nil {
+		return nil //nolint:nilerr // best-effort
+	}
+	_ = cmd.Process.Release()
 	return nil
 }
