@@ -11,10 +11,20 @@ import (
 	"strings"
 )
 
+// Seams for unit tests. The runtime defaults talk to the real environment.
+var (
+	getenvFn     = os.Getenv
+	lookPathFn   = exec.LookPath
+	runFn        = func(c *exec.Cmd) error { return c.Run() }
+	outputFn     = func(c *exec.Cmd) ([]byte, error) { return c.Output() }
+	executableFn = os.Executable
+	startFn      = func(c *exec.Cmd) error { return c.Start() }
+)
+
 // Backend reports which clipboard tool is available, or an error with
 // install instructions.
 func Backend() (string, error) {
-	if os.Getenv("WAYLAND_DISPLAY") != "" {
+	if getenvFn("WAYLAND_DISPLAY") != "" {
 		if look("wl-copy") && look("wl-paste") {
 			return "wl", nil
 		}
@@ -35,7 +45,7 @@ func Backend() (string, error) {
 }
 
 func look(name string) bool {
-	_, err := exec.LookPath(name)
+	_, err := lookPathFn(name)
 	return err == nil
 }
 
@@ -48,21 +58,21 @@ func Write(value string) error {
 	case "xclip":
 		cmd := exec.Command("xclip", "-selection", "clipboard")
 		cmd.Stdin = strings.NewReader(value)
-		return cmd.Run()
+		return runFn(cmd)
 	case "xsel":
 		cmd := exec.Command("xsel", "--clipboard", "--input")
 		cmd.Stdin = strings.NewReader(value)
-		return cmd.Run()
+		return runFn(cmd)
 	case "wl":
 		cmd := exec.Command("wl-copy", "--sensitive")
 		cmd.Stdin = strings.NewReader(value)
-		return cmd.Run()
+		return runFn(cmd)
 	case "mac":
 		// pbcopy reads from stdin verbatim — no escaping pitfalls like the
 		// AppleScript literal had (newlines, quotes, control chars).
 		cmd := exec.Command("pbcopy")
 		cmd.Stdin = strings.NewReader(value)
-		return cmd.Run()
+		return runFn(cmd)
 	}
 	return fmt.Errorf("unsupported backend: %s", b)
 }
@@ -74,16 +84,16 @@ func Read() (string, error) {
 	}
 	switch b {
 	case "xclip":
-		out, err := exec.Command("xclip", "-o", "-selection", "clipboard").Output()
+		out, err := outputFn(exec.Command("xclip", "-o", "-selection", "clipboard"))
 		return string(out), err
 	case "xsel":
-		out, err := exec.Command("xsel", "--clipboard", "--output").Output()
+		out, err := outputFn(exec.Command("xsel", "--clipboard", "--output"))
 		return string(out), err
 	case "wl":
-		out, err := exec.Command("wl-paste", "--no-newline").Output()
+		out, err := outputFn(exec.Command("wl-paste", "--no-newline"))
 		return string(out), err
 	case "mac":
-		out, err := exec.Command("pbpaste").Output()
+		out, err := outputFn(exec.Command("pbpaste"))
 		return string(out), err
 	}
 	return "", fmt.Errorf("unsupported backend: %s", b)
@@ -98,16 +108,16 @@ func Clear() error {
 	case "xclip":
 		cmd := exec.Command("xclip", "-selection", "clipboard")
 		cmd.Stdin = strings.NewReader("")
-		return cmd.Run()
+		return runFn(cmd)
 	case "xsel":
 		cmd := exec.Command("xsel", "--clipboard", "--clear")
-		return cmd.Run()
+		return runFn(cmd)
 	case "wl":
-		return exec.Command("wl-copy", "--clear").Run()
+		return runFn(exec.Command("wl-copy", "--clear"))
 	case "mac":
 		cmd := exec.Command("pbcopy")
 		cmd.Stdin = strings.NewReader("")
-		return cmd.Run()
+		return runFn(cmd)
 	}
 	return fmt.Errorf("unsupported backend: %s", b)
 }
@@ -130,7 +140,7 @@ func WriteWithAutoClear(value string, timeout int) error {
 	if timeout <= 0 {
 		return nil
 	}
-	self, err := os.Executable()
+	self, err := executableFn()
 	if err != nil {
 		return nil //nolint:nilerr // best-effort: clipboard write succeeded
 	}
@@ -139,9 +149,11 @@ func WriteWithAutoClear(value string, timeout int) error {
 	// Detach: no inherited stdout/stderr; parent will not wait.
 	cmd.Stdout = nil
 	cmd.Stderr = nil
-	if err := cmd.Start(); err != nil {
+	if err := startFn(cmd); err != nil {
 		return nil //nolint:nilerr // best-effort
 	}
-	_ = cmd.Process.Release()
+	if cmd.Process != nil {
+		_ = cmd.Process.Release()
+	}
 	return nil
 }
