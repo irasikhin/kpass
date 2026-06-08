@@ -71,6 +71,11 @@ func profileIssues(c *ctx, fc config.FileConfig, name string) []string {
 			issues = append(issues, "password database profile not found: "+p.PasswordDatabase)
 		}
 	}
+	if p.UseKeyring {
+		if err := keyringAvailableFn(); err != nil {
+			issues = append(issues, "system keyring not available: "+err.Error())
+		}
+	}
 	if len(issues) == 0 {
 		if _, err := config.ResolveProfile(fc, name, passwordFetcher, c.errw); err != nil {
 			issues = append(issues, err.Error())

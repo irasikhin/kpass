@@ -258,6 +258,72 @@ backup_max_age_days = 30
 	}
 }
 
+func TestLoad_UseKeyring(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "~/vaults/main.kdbx"
+use_keyring = true
+`)
+
+	fc, _, err := Load(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fc.Databases["main"].UseKeyring {
+		t.Error("use_keyring should be true")
+	}
+}
+
+func TestLoad_UseKeyringBadType(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "~/vaults/main.kdbx"
+use_keyring = "yes"
+`)
+
+	if _, _, err := Load(cfgPath); err == nil || !strings.Contains(err.Error(), "use_keyring") {
+		t.Errorf("expected use_keyring type error, got %v", err)
+	}
+}
+
+func TestLoad_UseKeyringWithPasswordFileConflict(t *testing.T) {
+	dir := t.TempDir()
+	cfgPath := filepath.Join(dir, "config.toml")
+	writeTOML(t, cfgPath, `
+default = "main"
+
+[databases.main]
+database = "~/vaults/main.kdbx"
+password_file = "~/vaults/pw.txt"
+use_keyring = true
+`)
+
+	if _, _, err := Load(cfgPath); err == nil || !strings.Contains(err.Error(), "cannot combine 'use_keyring'") {
+		t.Errorf("expected use_keyring/password_file conflict, got %v", err)
+	}
+}
+
+func TestDump_UseKeyringRoundTrip(t *testing.T) {
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {Database: "/v/main.kdbx", UseKeyring: true},
+		},
+	}
+	out := Dump(fc)
+	if !strings.Contains(out, "use_keyring = true") {
+		t.Errorf("Dump missing use_keyring:\n%s", out)
+	}
+}
+
 func TestLoad_PasswordFileAndPasswordDBConflict(t *testing.T) {
 	dir := t.TempDir()
 	cfgPath := filepath.Join(dir, "config.toml")
@@ -399,6 +465,33 @@ func TestResolveRuntime_DBAndSelectorConflict(t *testing.T) {
 		t.Errorf("expected conflict error, got: %v", err)
 	}
 }
+
+func TestEnvUseKeyring(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want *bool
+	}{
+		{"", nil},
+		{"1", boolPtr(true)},
+		{"true", boolPtr(true)},
+		{"YES", boolPtr(true)},
+		{"on", boolPtr(true)},
+		{"0", boolPtr(false)},
+		{"nope", boolPtr(false)},
+	}
+	for _, tc := range cases {
+		t.Setenv("KPASS_USE_KEYRING", tc.raw)
+		got := EnvUseKeyring()
+		switch {
+		case tc.want == nil && got != nil:
+			t.Errorf("%q: got %v, want nil", tc.raw, *got)
+		case tc.want != nil && (got == nil || *got != *tc.want):
+			t.Errorf("%q: got %v, want %v", tc.raw, got, *tc.want)
+		}
+	}
+}
+
+func boolPtr(b bool) *bool { return &b }
 
 func TestEnvCacheTTL_Unset(t *testing.T) {
 	t.Setenv("KPASS_SESSION_TTL", "")
@@ -903,6 +996,39 @@ func TestResolveRuntime_FlagNoCacheOverridesProfile(t *testing.T) {
 	}
 	if cfg.NoCache {
 		t.Error("flag false should override profile true")
+	}
+}
+
+func TestResolveRuntime_UseKeyringFromProfile(t *testing.T) {
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {Database: "/x.kdbx", UseKeyring: true},
+		},
+	}
+	cfg, err := ResolveRuntime(fc, "", RuntimeFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.UseKeyring {
+		t.Error("profile use_keyring should propagate to runtime config")
+	}
+}
+
+func TestResolveRuntime_FlagUseKeyringOverridesProfile(t *testing.T) {
+	off := false
+	fc := FileConfig{
+		DefaultDatabase: "main",
+		Databases: map[string]Profile{
+			"main": {Database: "/x.kdbx", UseKeyring: true},
+		},
+	}
+	cfg, err := ResolveRuntime(fc, "", RuntimeFlags{UseKeyring: &off}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.UseKeyring {
+		t.Error("--no-keyring flag should override profile use_keyring=true")
 	}
 }
 

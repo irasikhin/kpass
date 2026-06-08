@@ -159,6 +159,100 @@ func TestOpen_CacheInvalidIsCleared(t *testing.T) {
 	}
 }
 
+// resetKeyringSeams restores the keyring seams after each test.
+func resetKeyringSeams(t *testing.T) {
+	t.Helper()
+	origGet, origSet, origDel := keyringGetFn, keyringSetFn, keyringDeleteFn
+	origPrompt := PasswordPrompter
+	t.Cleanup(func() {
+		keyringGetFn, keyringSetFn, keyringDeleteFn = origGet, origSet, origDel
+		PasswordPrompter = origPrompt
+	})
+}
+
+func TestOpen_KeyringHit(t *testing.T) {
+	OpenHook = nil
+	resetKeyringSeams(t)
+	d := seedDB(t)
+	path := writeKdbx(t, d, "kr-pw")
+
+	keyringGetFn = func(string) (string, error) { return "kr-pw", nil }
+	keyringSetFn = func(string, string) error { return nil }
+	PasswordPrompter = func(string, bool) (string, error) {
+		t.Fatal("prompt should not be called on keyring hit")
+		return "", nil
+	}
+
+	cfg := config.Config{Database: path, UseKeyring: true}
+	if _, err := Open(cfg); err != nil {
+		t.Fatalf("keyring hit open: %v", err)
+	}
+}
+
+func TestOpen_KeyringMissPromptsAndStores(t *testing.T) {
+	OpenHook = nil
+	resetKeyringSeams(t)
+	d := seedDB(t)
+	path := writeKdbx(t, d, "fresh-pw")
+
+	keyringGetFn = func(string) (string, error) { return "", errors.New("miss") }
+	var stored string
+	keyringSetFn = func(_, pw string) error { stored = pw; return nil }
+	PasswordPrompter = func(string, bool) (string, error) { return "fresh-pw", nil }
+
+	if _, err := Open(config.Config{Database: path, UseKeyring: true}); err != nil {
+		t.Fatalf("keyring miss open: %v", err)
+	}
+	if stored != "fresh-pw" {
+		t.Errorf("expected password stored in keyring, got %q", stored)
+	}
+}
+
+func TestOpen_KeyringStaleIsCleared(t *testing.T) {
+	OpenHook = nil
+	resetKeyringSeams(t)
+	d := seedDB(t)
+	path := writeKdbx(t, d, "right-pw")
+
+	keyringGetFn = func(string) (string, error) { return "stale-pw", nil }
+	var deleted, stored bool
+	keyringDeleteFn = func(string) error { deleted = true; return nil }
+	keyringSetFn = func(string, string) error { stored = true; return nil }
+	PasswordPrompter = func(string, bool) (string, error) { return "right-pw", nil }
+
+	if _, err := Open(config.Config{Database: path, UseKeyring: true}); err != nil {
+		t.Fatalf("stale keyring open: %v", err)
+	}
+	if !deleted {
+		t.Error("expected stale keyring entry to be deleted")
+	}
+	if !stored {
+		t.Error("expected fresh password to be stored after re-prompt")
+	}
+}
+
+func TestOpen_KeyringSkipsPlaintextCache(t *testing.T) {
+	OpenHook = nil
+	resetKeyringSeams(t)
+	d := seedDB(t)
+	path := writeKdbx(t, d, "kr-pw")
+
+	runtime := t.TempDir()
+	t.Setenv("XDG_RUNTIME_DIR", runtime)
+	keyringGetFn = func(string) (string, error) { return "", errors.New("miss") }
+	keyringSetFn = func(string, string) error { return nil }
+	PasswordPrompter = func(string, bool) (string, error) { return "kr-pw", nil }
+
+	// UseKeyring on with a TTL that would otherwise enable the plaintext cache.
+	if _, err := Open(config.Config{Database: path, UseKeyring: true, CacheTTL: 300}); err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	entries, _ := os.ReadDir(filepath.Join(runtime, "kpass"))
+	if len(entries) != 0 {
+		t.Errorf("expected no plaintext cache files when keyring is active, found %d", len(entries))
+	}
+}
+
 func TestObtainPassword_InlineWins(t *testing.T) {
 	got, err := obtainPassword(config.Config{Password: "inline"}, "/x.kdbx")
 	if err != nil {

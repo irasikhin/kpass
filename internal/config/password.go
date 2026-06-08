@@ -71,6 +71,7 @@ func resolveProfile(fc FileConfig, name string, fetcher PasswordFetcher, log io.
 		KeyFile:          profile.KeyFile,
 		CacheTTL:         ttl,
 		NoCache:          noCache,
+		UseKeyring:       profile.UseKeyring,
 		BackupKeep:       profile.BackupKeep,
 		BackupMaxAgeDays: profile.BackupMaxAgeDays,
 	}, nil
@@ -83,6 +84,7 @@ type RuntimeFlags struct {
 	KeyFile      string
 	CacheTTL     *int
 	NoCache      *bool
+	UseKeyring   *bool
 }
 
 // ResolveRuntime merges CLI flags, env vars, and the selected profile into
@@ -166,6 +168,16 @@ func ResolveRuntime(fc FileConfig, selectedDatabase string, flags RuntimeFlags, 
 		noCache = profileConfig.NoCache
 	}
 
+	useKeyring := false
+	switch {
+	case flags.UseKeyring != nil:
+		useKeyring = *flags.UseKeyring
+	case EnvUseKeyring() != nil:
+		useKeyring = *EnvUseKeyring()
+	case profileConfig != nil:
+		useKeyring = profileConfig.UseKeyring
+	}
+
 	var backupKeep, backupMaxAge int
 	if profileConfig != nil {
 		backupKeep = profileConfig.BackupKeep
@@ -179,6 +191,7 @@ func ResolveRuntime(fc FileConfig, selectedDatabase string, flags RuntimeFlags, 
 		KeyFile:          keyFile,
 		CacheTTL:         ttl,
 		NoCache:          noCache,
+		UseKeyring:       useKeyring,
 		BackupKeep:       backupKeep,
 		BackupMaxAgeDays: backupMaxAge,
 	}, nil

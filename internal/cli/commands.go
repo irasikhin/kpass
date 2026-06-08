@@ -16,6 +16,8 @@ type kpassCLI struct {
 	KeyFile      string           `help:"Composite key file." placeholder:"PATH" short:"k"`
 	CacheTTL     int              `help:"Master-password cache TTL in seconds." placeholder:"N" aliases:"session-ttl" default:"-1"`
 	NoCache      bool             `help:"Disable master-password cache." aliases:"no-session"`
+	UseKeyring   bool             `help:"Read/store the master password in the OS keyring."`
+	NoKeyring    bool             `help:"Disable the OS keyring for this invocation."`
 	NoColor      bool             `help:"Disable colored output." short:"C"`
 	Yes          bool             `help:"Auto-answer yes to all confirmation prompts." short:"y"`
 	Version      kong.VersionFlag `short:"V" help:"Print version and exit."`
@@ -50,6 +52,7 @@ type kpassCLI struct {
 	Init       InitCmd       `cmd:"" help:"Initialize a new KeePass database and config."`
 	Stats      StatsCmd      `cmd:"" help:"Show database statistics."`
 	Db         DbCmd         `cmd:"" help:"Manage database profiles in config."`
+	Keyring    KeyringCmd    `cmd:"" help:"Manage OS keyring storage of the master password."`
 	Completion CompletionCmd `cmd:"" help:"Generate shell completion script."`
 	Complete   CompleteCmd   `cmd:"" name:"__complete" hidden:"" help:"Internal helper for shell completion."`
 }
@@ -71,6 +74,14 @@ func (cli *kpassCLI) globalFlags() globalFlags {
 	if cli.NoCache {
 		t := true
 		g.noCache = &t
+	}
+	switch {
+	case cli.UseKeyring:
+		t := true
+		g.useKeyring = &t
+	case cli.NoKeyring:
+		f := false
+		g.useKeyring = &f
 	}
 	return g
 }
@@ -111,6 +122,7 @@ var commandsWithSelector = map[string]bool{
 	"history":        true,
 	"undo":           true,
 	"stats":          true,
+	"keyring":        true,
 }
 
 // normalizeFields strips empty entries from a field slice; the enum tag on

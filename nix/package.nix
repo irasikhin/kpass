@@ -15,7 +15,7 @@ buildGoModule {
 
   src = lib.cleanSource ./..;
 
-  vendorHash = "sha256-KPNAB8/DrmFh6R+APSQCHNdPrp+E7WLA7cX1yWhY+EI=";
+  vendorHash = "sha256-29hIPcFBTX6Hc7uM9gRK478rC2OQJL6/OHTlgDRVkXU=";
 
   subPackages = [ "cmd/kpass" ];
 

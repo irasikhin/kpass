@@ -69,6 +69,37 @@ seconds so subsequent commands don't re-prompt.
 > The legacy top-level `default_database` key was removed in `0.3.0`.
 > Rename it to `default`.
 
+### System keyring
+
+Instead of the plaintext session cache, the master password can be persisted
+in the operating system's secret store — gnome-keyring / any Secret Service
+backend (KWallet, KeePassXC) on Linux, the Keychain on macOS, the Credential
+Manager on Windows.
+
+| Key           | Type | Default | Notes                                                                 |
+|---------------|------|---------|-----------------------------------------------------------------------|
+| `use_keyring` | bool | `false` | Read the master password from the OS keyring before prompting, and store it there after a successful unlock. |
+
+When `use_keyring` is on, the plaintext `$XDG_RUNTIME_DIR/kpass/*.json`
+[session cache](#session-cache) is **not written** for that profile — the
+keyring is the only at-rest copy and it is OS-encrypted. `use_keyring` cannot
+be combined with `password_file` (rejected at load time); a
+`password_database` chain takes precedence and bypasses the keyring.
+
+Manage stored secrets with the `keyring` subcommands (these also flip the
+config key for you):
+
+```bash
+kpass keyring set [@profile]     # prompt, verify, store, enable use_keyring
+kpass keyring rm  [@profile]     # delete the secret, disable use_keyring
+kpass keyring status [@profile]  # backend availability + whether stored
+```
+
+A Secret Service provider must be running for storage to succeed; if the
+backend is unavailable kpass falls back to prompting (nothing is cached).
+`kpass doctor` flags a profile whose `use_keyring` is set when no backend is
+reachable.
+
 ### Backups
 
 Every `kpass` mutation writes a timestamped `*.bak` next to the database
@@ -93,6 +124,7 @@ triggers first removes a backup).
 | `KPASS_CACHE_TTL`    | Legacy alias for `KPASS_SESSION_TTL`.                                           |
 | `KPASS_PASSWORD_FILE`| Fallback `password_file` when no config / no profile match.                     |
 | `KPASS_KEY_FILE`     | Fallback `key_file` when no config / no profile match.                          |
+| `KPASS_USE_KEYRING`  | Override `use_keyring` (`1`/`true`/`yes`/`on` enable; anything else disables).   |
 | `KEEPASS_DB_PATH`    | Fallback `database` path when no profile is selected.                           |
 | `XDG_RUNTIME_DIR`    | Where the session-cache file lives. If unset, the cache is disabled.            |
 | `XDG_CACHE_HOME`     | Where shell-completion entry caches live (`$XDG_CACHE_HOME/kpass/`).            |
@@ -116,6 +148,7 @@ they shadow the per-profile config value for the current invocation.
 | `-k, --key-file PATH`      | `key_file`       |
 | `--session-ttl N` (alias: `--cache-ttl`) | `session_ttl` |
 | `--no-session` (alias: `--no-cache`)     | `no_session`  |
+| `--use-keyring` / `--no-keyring`         | `use_keyring` |
 | `-C, --no-color`           | (cosmetic)       |
 | `-y, --yes`                | (cosmetic)       |
 
@@ -212,6 +245,25 @@ session_ttl = 300         # 5 minutes
 no_session  = false
 ```
 
+### 7. Store the master password in the OS keyring
+
+```toml
+default = "personal"
+
+[databases.personal]
+database    = "~/keepass/personal.kdbx"
+use_keyring = true
+```
+
+```bash
+kpass keyring set        # prompt once; the password is verified then stored
+kpass get personal/x     # no prompt — read from the keyring, no plaintext cache
+```
+
+The first unlock prompts and stores; later commands read from the keyring
+until you run `kpass keyring rm`. Easiest to enable via `kpass keyring set`,
+which writes `use_keyring = true` for you after verifying the password.
+
 ---
 
 ## Resolution order
@@ -235,5 +287,7 @@ The selected profile is whatever follows `@` in the first positional arg
   files, broken password chains, and unknown keys.
 - `kpass db add NAME PATH` / `kpass db remove NAME` / `kpass db default NAME` —
   edit profiles from the command line.
+- `kpass keyring set` / `kpass keyring rm` / `kpass keyring status` — manage the
+  master password in the OS keyring (`use_keyring`).
 - [`internal/config/load.go`](../internal/config/load.go) is the authoritative
   parser; if this doc disagrees with that file, the file is right.

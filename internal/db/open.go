@@ -8,6 +8,7 @@ import (
 
 	"github.com/irasikhin/kpass/internal/cache"
 	"github.com/irasikhin/kpass/internal/config"
+	"github.com/irasikhin/kpass/internal/keyring"
 	"github.com/irasikhin/kpass/internal/runtimex"
 )
 
@@ -18,6 +19,15 @@ var OpenHook func(cfg config.Config) (*DB, error)
 // PasswordPrompter is the function used to ask the user for a password.
 // Defaults to runtimex.PromptSecret. Tests override via runtimex.PromptHook.
 var PasswordPrompter = runtimex.PromptSecret
+
+// Seams for the OS keyring; tests override these because no Secret Service
+// backend exists in CI.
+var (
+	keyringGetFn    = keyring.Get
+	keyringSetFn    = keyring.Set
+	keyringDeleteFn = keyring.Delete
+	keyringAccount  = keyring.Account
+)
 
 // Open mirrors Python open_database. Tries cached password (if cache enabled),
 // then falls back to file/inline/prompt. On successful open, stores the
@@ -53,7 +63,20 @@ func Open(cfg config.Config) (*DB, error) {
 		return &DB{Path: dbPath, KeyFile: cfg.KeyFile, Raw: raw, BackupKeep: cfg.BackupKeep, BackupMaxAgeDays: cfg.BackupMaxAgeDays}, nil
 	}
 
-	if cache.Enabled(cfg) {
+	// Keyring is consulted only when the password would otherwise be prompted:
+	// a password_file or a chained password_database value takes precedence and
+	// makes the keyring (and the plaintext cache) moot.
+	keyringOK := cfg.UseKeyring && cfg.PasswordFile == "" && cfg.Password == ""
+	acct := ""
+	if keyringOK {
+		acct = keyringAccount(dbPath, cfg.KeyFile)
+		if cached, err := keyringGetFn(acct); err == nil && cached != "" {
+			if db, err := tryOpen(cached); err == nil {
+				return db, nil
+			}
+			_ = keyringDeleteFn(acct) // stale secret; drop and re-prompt
+		}
+	} else if cache.Enabled(cfg) {
 		if cached, _ := cache.Load(dbPath, cfg.KeyFile); cached != "" {
 			db, err := tryOpen(cached)
 			if err == nil {
@@ -74,8 +97,13 @@ func Open(cfg config.Config) (*DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open KeePass database: %w", err)
 	}
-	if password != "" && cache.Enabled(cfg) {
-		_ = cache.Store(dbPath, cfg.KeyFile, password, cfg.CacheTTL)
+	if password != "" {
+		switch {
+		case keyringOK:
+			_ = keyringSetFn(acct, password) // OS-encrypted, persistent
+		case cache.Enabled(cfg):
+			_ = cache.Store(dbPath, cfg.KeyFile, password, cfg.CacheTTL)
+		}
 	}
 	return db, nil
 }

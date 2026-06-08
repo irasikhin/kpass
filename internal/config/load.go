@@ -21,6 +21,7 @@ var profileKeys = map[string]bool{
 	"cache_ttl":           true,
 	"no_session":          true,
 	"no_cache":            true,
+	"use_keyring":         true,
 	"backup_keep":         true,
 	"backup_max_age_days": true,
 }
@@ -154,6 +155,15 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 		}
 	}
 
+	var useKeyring bool
+	if v, ok := data["use_keyring"]; ok {
+		b, err := asBool(v)
+		if err != nil {
+			return Profile{}, fmt.Errorf("kpass config key 'use_keyring' in profile '%s' must be a boolean", name)
+		}
+		useKeyring = b
+	}
+
 	passwordFile, _ := data["password_file"].(string)
 	passwordDB, _ := data["password_database"].(string)
 	passwordEntry, _ := data["password_entry"].(string)
@@ -161,6 +171,9 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 
 	if passwordFile != "" && (passwordDB != "" || passwordEntry != "") {
 		return Profile{}, fmt.Errorf("kpass database profile '%s' cannot combine 'password_file' with password lookup from another database", name)
+	}
+	if useKeyring && passwordFile != "" {
+		return Profile{}, fmt.Errorf("kpass database profile '%s' cannot combine 'use_keyring' with 'password_file'", name)
 	}
 	if (passwordDB == "") != (passwordEntry == "") {
 		return Profile{}, fmt.Errorf("kpass database profile '%s' must set both 'password_database' and 'password_entry' together", name)
@@ -191,6 +204,7 @@ func parseProfile(name string, raw any, path string) (Profile, error) {
 		KeyFile:          runtimex.ExpandPath(keyFile),
 		CacheTTL:         ttl,
 		NoCache:          noCache,
+		UseKeyring:       useKeyring,
 		BackupKeep:       backupKeep,
 		BackupMaxAgeDays: backupMaxAge,
 	}, nil

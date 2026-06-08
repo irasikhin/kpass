@@ -34,6 +34,7 @@ kpass ls                         # tree view
 kpass get work/github            # show fields
 kpass copy work/github -F otp    # copy OTP to clipboard
 kpass search gh                  # fuzzy search by name, path, or field
+kpass keyring set                # stash the master password in the OS keyring
 ```
 
 Use `@profile` to address a non-default database: `kpass ls @personal`.
@@ -55,6 +56,10 @@ plus worked examples (chained passwords, key files, backup retention) —
 is in [docs/CONFIG.md](./docs/CONFIG.md). `kpass db add NAME PATH` /
 `kpass db remove NAME` / `kpass db default NAME` edit profiles from the
 command line.
+
+Set `use_keyring = true` (or run `kpass keyring set`) to store the master
+password in the OS keyring — gnome-keyring / Secret Service, macOS Keychain,
+or Windows Credential Manager — instead of the plaintext session cache.
 
 ## Docs
 

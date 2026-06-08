@@ -14,8 +14,9 @@ type Config struct {
 	KeyFile          string
 	CacheTTL         int
 	NoCache          bool
-	BackupKeep       int // max .bak files to keep (0 = unlimited)
-	BackupMaxAgeDays int // delete .bak older than N days (0 = forever)
+	UseKeyring       bool // store/read master password in the OS keyring
+	BackupKeep       int  // max .bak files to keep (0 = unlimited)
+	BackupMaxAgeDays int  // delete .bak older than N days (0 = forever)
 }
 
 // Profile is one parsed [databases.<name>] block in the TOML config.
@@ -27,8 +28,9 @@ type Profile struct {
 	KeyFile          string
 	CacheTTL         *int
 	NoCache          *bool
-	BackupKeep       int // max backups to keep (0 = unlimited)
-	BackupMaxAgeDays int // delete backups older than N days (0 = forever)
+	UseKeyring       bool // store/read master password in the OS keyring
+	BackupKeep       int  // max backups to keep (0 = unlimited)
+	BackupMaxAgeDays int  // delete backups older than N days (0 = forever)
 }
 
 // FileConfig is the whole parsed TOML file.

@@ -53,6 +53,7 @@ type globalFlags struct {
 	keyFile      string
 	cacheTTL     *int
 	noCache      *bool
+	useKeyring   *bool
 	yes          bool
 }
 
@@ -63,6 +64,7 @@ func (g globalFlags) toRuntimeFlags() config.RuntimeFlags {
 		KeyFile:      g.keyFile,
 		CacheTTL:     g.cacheTTL,
 		NoCache:      g.noCache,
+		UseKeyring:   g.useKeyring,
 	}
 }
 
@@ -321,12 +323,23 @@ func topCommand(path string) string {
 	return path
 }
 
+// resolveRuntime merges flags, env, and the selected profile into the final
+// runtime Config without opening the database. Used by openDatabase and by
+// the keyring subcommands.
+func (c *ctx) resolveRuntime() (config.Config, error) {
+	cfg, err := config.ResolveRuntime(c.fileConfig, c.selector, c.gf.toRuntimeFlags(), passwordFetcher, c.errw)
+	if err != nil {
+		return config.Config{}, &UserError{Msg: err.Error()}
+	}
+	return cfg, nil
+}
+
 // openDatabase resolves the runtime config and opens the DB. Called from
 // command Run methods that need DB access.
 func (c *ctx) openDatabase() error {
-	cfg, err := config.ResolveRuntime(c.fileConfig, c.selector, c.gf.toRuntimeFlags(), passwordFetcher, c.errw)
+	cfg, err := c.resolveRuntime()
 	if err != nil {
-		return &UserError{Msg: err.Error()}
+		return err
 	}
 	c.cfg = &cfg
 	opened, err := db.Open(cfg)

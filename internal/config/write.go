@@ -58,6 +58,9 @@ func Dump(fc FileConfig) string {
 				b.WriteString("no_session = false\n")
 			}
 		}
+		if p.UseKeyring {
+			b.WriteString("use_keyring = true\n")
+		}
 		if p.BackupKeep > 0 {
 			fmt.Fprintf(&b, "backup_keep = %d\n", p.BackupKeep)
 		}
